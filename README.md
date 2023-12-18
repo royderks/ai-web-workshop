@@ -1,6 +1,6 @@
 # AI For Frontend Workshop
 
-![AI For Frontend demo](/assets/langchain-workshop.mov)
+![AI For Frontend demo](/assets/chat-app-document-loader.png)
 
 ## Prerequisites
 
