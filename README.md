@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* OpenAI API Key. You can sign up for a [free trial](https://openai.com/signup](https://openai.com/pricing) > "Login".
+* OpenAI API Key. You can sign up for a [free trial](https://openai.com/pricing) > "Login".
 
 ## Installation
 
