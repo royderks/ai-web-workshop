@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* OpenAI API Key. You can sign up for a [free trial](https://openai.com/pricing) > "Login".
+- OpenAI API Key. You can sign up for a [free trial](https://openai.com/pricing) > "Login".
 
 ## Installation
 
@@ -33,7 +33,7 @@ You're now ready to start with the excercises.
 To interface with the LLMs from OpenAI, we need to install a library called LangChain:
 
 ```bash
-npm install langchain
+npm install langchain @langchain/core @langchain/openai
 ```
 
 After the installation is complete, you should add a new file called `.env` in the root of your Vite application and add the following environment variable:
@@ -48,15 +48,16 @@ Next, we'll create a new file called `src/utils/langchain.ts` and add the follow
     <summary>src/utils/langchain.ts</summary>
   
     ```ts
-    import { OpenAI } from "langchain/llms/openai";
+    import { OpenAI } from "@langchain/openai";
 
     const llm = new OpenAI({
         openAIApiKey: import.meta.env.VITE_OPENAI_KEY
     });
     ```
+
 </details>
 
-This will initialize a connection to OpenAI using LangChain and let us access the models. 
+This will initialize a connection to OpenAI using LangChain and let us access the models.
 
 We'll create our first function that can be used to generate an answer for a question, add the following to the bottom of the file:
 
@@ -68,7 +69,7 @@ We'll create our first function that can be used to generate an answer for a que
         let answer = ''
 
         try {
-            answer = await llm.predict(question);
+            answer = await llm.invoke(question);
         } catch (e) {
             return 'Something went wrong'
         }
@@ -76,6 +77,7 @@ We'll create our first function that can be used to generate an answer for a que
         return answer
     }
     ```
+
 </details>
 
 To test if what we've done is working, create new file called `src/utils/langchain.test.ts` and write a test for the function `generateAnswer`.
@@ -99,6 +101,7 @@ Take the following code and modify it so the test will succeed:
         });
     });
     ```
+
 </details>
 
 Run `npm run test` to run the above test. Make sure your test is succeeding.
@@ -124,9 +127,10 @@ From our `App` component in `src/App.tsx`, we need to call the `generateAnswer` 
 
     }
     ```
+
 </details>
 
-To call the `generateAnswer` function and add the question and answer to the state, you'll need to create a handler function. Add the following code to `src/App.tsx` and modify it so the state variable `result` contains both the question and answer. 
+To call the `generateAnswer` function and add the question and answer to the state, you'll need to create a handler function. Add the following code to `src/App.tsx` and modify it so the state variable `result` contains both the question and answer.
 
 <details open>
     <summary>src/App.tsx</summary>
@@ -149,6 +153,7 @@ To call the `generateAnswer` function and add the question and answer to the sta
         )
     }
     ```
+
 </details>
 
 Then, turn the `textarea` element into a controlled component that updates the `question` state variable whenever you type something. Also, the handler function we created above must be called when you submit the form.
@@ -182,9 +187,10 @@ Then, turn the `textarea` element into a controlled component that updates the `
     // ...
 
     ```
+
 </details>
 
-Submit the form and have a look at the *"Network tab"* in the browser, make sure you see a request to OpenAI that includes your question and resolves to an answer.
+Submit the form and have a look at the _"Network tab"_ in the browser, make sure you see a request to OpenAI that includes your question and resolves to an answer.
 
 ### Excercise 3
 
@@ -218,6 +224,7 @@ When you submit the form, you want to see the question and the answer displayed 
         )
     }
     ```
+
 </details>
 
 Render this component from `src/App.tsx` so it shows the question and the answer. You can use a name like "Me" for the question, and "GPT (or "AI") for the answer:
@@ -241,11 +248,12 @@ Render this component from `src/App.tsx` so it shows the question and the answer
                       // 2. Render the Message component for the question and answer
                   </div>
               </div>
-            
+
             // ...
         )
     }
     ```
+
 </details>
 
 When you complete this excercise you should be able to type a question, submit the form and see both the answer and question displayed on the screen.
@@ -270,6 +278,7 @@ The response from OpenAI might take some time to be delivered. That's why adding
         )
     }
     ```
+
 </details>
 
 You can use this component in `src/App.tsx` to show a loading indicator when you're waiting for the request to OpenAI to resolve.
@@ -290,7 +299,7 @@ Imagine we're building a GPT for a travel office, let's add the following prompt
 Take the role of a personal travel assistant, and answer the following question in detail: {question}
 ```
 
-Have a look at the [LangChainJS docs](https://js.langchain.com/docs/modules/model_io/prompts/prompt_templates/#what-is-a-prompt-template) to see how to implement a prompt template for the `generateAnswer` function in `src/utils/langchain.ts`.
+Have a look at the [LangChainJS docs](https://js.langchain.com/docs/modules/model_io/prompts/quick_start#what-is-a-prompt-template) to see how to implement a prompt template for the `generateAnswer` function in `src/utils/langchain.ts`.
 
 Try out the impact of the prompt template on the answer from the LLM. Make sure to update the test case in `src/utils/langchain.test.ts` too.
 
@@ -304,7 +313,7 @@ You can modify these values in `src/utils/langchain.ts`:
     <summary>src/utils/langchain.ts</summary>
   
     ```ts
-    import { OpenAI } from "langchain/llms/openai";
+    import { OpenAI } from "@langchain/openai";
 
     const llm = new OpenAI({
         openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
@@ -315,6 +324,7 @@ You can modify these values in `src/utils/langchain.ts`:
     // Everything else ...
 
     ```
+
 </details>
 
 Play around with different values. How does this impact the quality or style of the answer?
@@ -329,11 +339,11 @@ We can also try "few shot prompting" where we give the LLM some examples before 
     <summary>src/utils/langchain.ts</summary>
 
     ```ts
-    import { ChatOpenAI } from "langchain/chat_models/openai";
-    import { ChatPromptTemplate } from "langchain/prompts";
+    import { OpenAI } from "@langchain/openai";
+    import { ChatPromptTemplate } from "@langchain/core/prompts";
 
     const llm = new ChatOpenAI({
-    openAIApiKey: import.meta.env.VITE_OPENAI_KEY
+        openAIApiKey: import.meta.env.VITE_OPENAI_KEY
     });
 
     export async function generateAnswer(question: string) {
@@ -352,12 +362,9 @@ We can also try "few shot prompting" where we give the LLM some examples before 
             style: "detailed",
             text: question
         });
-        
+
         try {
-            const result = await llm.invoke(formattedChatPrompt);
-
-            answer = result?.content as string
-
+            answer = await llm.invoke(formattedChatPrompt);
         } catch (e) {
             return 'Something went wrong'
         }
@@ -365,6 +372,7 @@ We can also try "few shot prompting" where we give the LLM some examples before 
         return answer
     }
     ```
+
 </detail>
 
 In the above setup we made it easier to change the input variables, and by using a Chat model instead of LLM model we can start implementing different prompting techniques. You might see there's a `human` and `system` template, as in the Chat model subsequent messages are being used as context.
@@ -379,8 +387,11 @@ Let's start by adding a few shot prompting technique:
     <summary>src/utils/langchain.ts</summary>
 
     ```ts
-    import { ChatOpenAI } from "langchain/chat_models/openai";
-    import { FewShotChatMessagePromptTemplate, ChatPromptTemplate } from "langchain/prompts";
+    import { ChatOpenAI } from "@langchain/openai";
+    import {
+        FewShotChatMessagePromptTemplate,
+        ChatPromptTemplate,
+    } from "@langchain/core/prompts";
 
     const llm = new ChatOpenAI({
         openAIApiKey: import.meta.env.VITE_OPENAI_KEY
@@ -401,6 +412,7 @@ Let's start by adding a few shot prompting technique:
         ];
 
         const examplePrompt = ChatPromptTemplate.fromTemplate(`Human: {input}
+
 AI: {output}`);
 
         const fewShotPrompt = new FewShotChatMessagePromptTemplate({
@@ -415,7 +427,7 @@ AI: {output}`);
         const formattedChatPrompt = await fewShotPrompt.format({
             input: question,
         });
-        
+
         try {
             const result = await llm.invoke(formattedChatPrompt);
 
@@ -428,9 +440,10 @@ AI: {output}`);
         return answer
     }
     ```
+
 </details>
 
-Ask a question like "What are the highlights in amsterdam?" and the response should match the format of the examples. Try for yourself, see the difference when you change the provided examples.
+Ask a question like "What are the highlights in Amsterdam?" and the response should match the format of the examples. Try for yourself, see the difference when you change the provided examples.
 
 BONUS: Edit the application to allow follow-up questions by [passing the chat history](https://js.langchain.com/docs/modules/memory/how_to/summary#usage-with-an-llm).
 
@@ -440,7 +453,7 @@ Next to few-shot prompts or adding the chat history as context, you can also loa
 
 In the directory `src/public` you can find a file called `data.txt` that contains a blog post about the best highlights in Amsterdam.
 
-We don't want to pass the entire file to the LLM, as this can lead to overload when you have a lot of data. Instead, we need to take the most important parts of our data for whihch we would need a vector database.
+We don't want to pass the entire file to the LLM, as this can lead to overload when you have a lot of data. Instead, we need to take the most important parts of our data for which we would need a vector database.
 
 We'll use a local in-memory vectorstore as this is a demo environment, by making these changes in `src/utils/langchain.ts`:
 
@@ -449,7 +462,7 @@ We'll use a local in-memory vectorstore as this is a demo environment, by making
 
     ```ts
     // ...
-    import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+    import { OpenAIEmbeddings } from "@langchain/openai";
     import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
     import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
@@ -478,6 +491,7 @@ We'll use a local in-memory vectorstore as this is a demo environment, by making
 
     // Everything else ...
     ```
+
 </details>
 
 In `src/App.tsx` we need to load this data on the first render:
@@ -503,6 +517,7 @@ In `src/App.tsx` we need to load this data on the first render:
 
     }
     ```
+
 </details>
 
 The next step is to change the `generateAnswer` function to use the data stored in the vectorstore:
@@ -515,27 +530,35 @@ The next step is to change the `generateAnswer` function to use the data stored 
     import { RetrievalQAChain, loadQARefineChain } from "langchain/chains";
 
     const llm = new ChatOpenAI({
-    openAIApiKey: import.meta.env.VITE_OPENAI_KEY
+        openAIApiKey: import.meta.env.VITE_OPENAI_KEY
     });
 
     let vectorStore: MemoryVectorStore;
 
     export async function generateAnswer(question: string) {
+        let answer = "";
+
         const chain = new RetrievalQAChain({
             combineDocumentsChain: loadQARefineChain(llm),
             retriever: vectorStore.asRetriever(),
         });
 
-        const result = await chain.call({
+        try {
+            const result = await chain.invoke({
             query: question,
-        });
+            });
 
-        return result.output_text;
+            answer = result.output_text;
+        } catch (e) {
+            console.log(e);
+            return "Something went wrong";
+        }
     }
 
     // Everything else ...
 
     ```
+
 </details>
 
 If you ask a question now, it will inject the data from the document. Try this out with multiple (follow-up) questions.
@@ -545,5 +568,3 @@ If you ask a question now, it will inject the data from the document. Try this o
 - Document Loaders
 - RAG (Retrieval Augmented Generation)
 - Agents
-
-
