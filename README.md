@@ -33,7 +33,7 @@ You're now ready to start with the excercises.
 To interface with the LLMs from OpenAI, we need to install a library called LangChain:
 
 ```bash
-npm install langchain
+npm install langchain @langchain/openai
 ```
 
 After the installation is complete, you should add a new file called `.env` in the root of your Vite application and add the following environment variable:
@@ -48,11 +48,11 @@ Next, we'll create a new file called `src/utils/langchain.ts` and add the follow
     <summary>src/utils/langchain.ts</summary>
   
     ```ts
-    import { OpenAI } from "langchain/llms/openai";
+    import { OpenAI } from "@langchain/openai";
 
-    const llm = new OpenAI({
-        openAIApiKey: import.meta.env.VITE_OPENAI_KEY
-    });
+  const llm = new OpenAI({
+      openAIApiKey: import.meta.env.VITE_OPENAI_KEY
+  });
     ```
 </details>
 
@@ -68,7 +68,7 @@ We'll create our first function that can be used to generate an answer for a que
         let answer = ''
 
         try {
-            answer = await llm.predict(question);
+          answer = await llm.invoke(question);
         } catch (e) {
             return 'Something went wrong'
         }
@@ -102,6 +102,8 @@ Take the following code and modify it so the test will succeed:
 </details>
 
 Run `npm run test` to run the above test. Make sure your test is succeeding.
+
+Hint: Be explicit of what you expect the LLM to return.
 
 ### Excercise 2
 
@@ -152,37 +154,6 @@ To call the `generateAnswer` function and add the question and answer to the sta
 </details>
 
 Then, turn the `textarea` element into a controlled component that updates the `question` state variable whenever you type something. Also, the handler function we created above must be called when you submit the form.
-
-<details open>
-    <summary>src/App.tsx</summary>
-
-    ```ts
-    // ...
-
-    // 1. Call the handler function when you submit the form
-    <form className="stretch mx-2 flex flex-row gap-3 last:mb-2 md:mx-4 md:last:mb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl">
-        <div className="relative flex flex-col h-full flex-1 items-stretch md:flex-col">
-            <div className="flex flex-col w-full py-2 flex-grow md:py-3 md:pl-4 relative border border-black/10 bg-white dark:border-gray-900/50 dark:text-white dark:bg-gray-700 rounded-md shadow-[0_0_10px_rgba(0,0,0,0.10)] dark:shadow-[0_0_15px_rgba(0,0,0,0.10)]">
-            // 2. Store the value of `textarea` in state when you type
-                <textarea
-                    value={question}
-                    tabIndex={0}
-                    data-id="root"
-                    placeholder="Send a message..."
-                    className="m-0 w-full resize-none border-0 bg-transparent p-0 pr-7 focus:ring-0 focus-visible:ring-0 dark:bg-transparent pl-2 md:pl-0"
-                ></textarea>
-                <input type="submit"
-                    className="absolute p-1 rounded-md bottom-1.5 md:bottom-2.5 bg-transparent disabled:bg-gray-500 right-1 md:right-2 disabled:opacity-40"
-                    value="&#11157;"
-                />
-            </div>
-        </div>
-    </form>
-
-    // ...
-
-    ```
-</details>
 
 Submit the form and have a look at the *"Network tab"* in the browser, make sure you see a request to OpenAI that includes your question and resolves to an answer.
 
@@ -290,9 +261,13 @@ Imagine we're building a GPT for a travel office, let's add the following prompt
 Take the role of a personal travel assistant, and answer the following question in detail: {question}
 ```
 
-Have a look at the [LangChainJS docs](https://js.langchain.com/docs/modules/model_io/prompts/prompt_templates/#what-is-a-prompt-template) to see how to implement a prompt template for the `generateAnswer` function in `src/utils/langchain.ts`.
+We're going to test this prompt template in the [OpenAI Playground](https://platform.openai.com/playground) first.
+
+Have a look at the [LangChainJS docs](https://js.langchain.com/docs/modules/model_io/prompts/quick_start) to see how to implement a prompt template for the `generateAnswer` function in `src/utils/langchain.ts`.
 
 Try out the impact of the prompt template on the answer from the LLM. Make sure to update the test case in `src/utils/langchain.test.ts` too.
+
+Hint: How can you overwrite the prompt instruction in the test case too without mocking?
 
 ### Excercise 6
 
@@ -304,57 +279,57 @@ You can modify these values in `src/utils/langchain.ts`:
     <summary>src/utils/langchain.ts</summary>
   
     ```ts
-    import { OpenAI } from "langchain/llms/openai";
-
     const llm = new OpenAI({
         openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
         temperature: 0.9, // Can be between 0 and 1
-        modelName: "gpt-3.5-turbo-instruct", // Default. Other options: https://platform.openai.com/docs/models/
+        modelName: "gpt-4-0125-preview", // Default. Other options: https://platform.openai.com/docs/models/
+        maxTokens: 300 // length of response, tokens !== characters
     });
-
-    // Everything else ...
-
     ```
 </details>
 
-Play around with different values. How does this impact the quality or style of the answer?
+Play around with different values, both in your code and the OpenAI playground. How does this impact the quality or style of the answer?
 
 ### Excercise 7
 
 The above is an example of a "zero shot" prompt. We didn't provide the LLM with any context besides what role to take. Therefore we assumed the LLM knows what a travel agent is, but sometimes the model has no information on your question or needs additional context.
 
-We can also try "few shot prompting" where we give the LLM some examples before asking our question. Before implementing this type of prompting, we'll need to implement a chat model:
+Before implementing a new type of prompting, we'll need to implement a chat model:
 
-<details open>
+<details>
     <summary>src/utils/langchain.ts</summary>
 
     ```ts
-    import { ChatOpenAI } from "langchain/chat_models/openai";
-    import { ChatPromptTemplate } from "langchain/prompts";
+    import { ChatOpenAI } from "@langchain/openai";
+    import { ChatPromptTemplate } from "@langchain/core/prompts";
 
     const llm = new ChatOpenAI({
-    openAIApiKey: import.meta.env.VITE_OPENAI_KEY
+        openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
+        temperature: 1,
+        modelName: "gpt-4-0125-preview", 
     });
 
-    export async function generateAnswer(question: string) {
+    export async function generateAnswer(
+        question: string,
+        promptTemplate: string = "Take the role of a {role}, that answers questions in a {style} way.",
+        role: string = "Personal travel assistant",
+        style: string = "consistent" // What happens if you change this to detailed?
+    ) {
         let answer = ''
 
-        const systemTemplate = "Take the role of a {role}, that answers questions in a {style} way.";
-        const humanTemplate = "{text}";
-
         const chatPrompt = ChatPromptTemplate.fromMessages([
-            ["system", systemTemplate],
-            ["human", humanTemplate],
+            ["System", promptTemplate],
+            ["User", "{question}"],
         ])
 
-        const formattedChatPrompt = await chatPrompt.formatMessages({
-            role: "personal travel agent",
-            style: "detailed",
-            text: question
+        const formattedPrompt = await chatPrompt.formatMessages({
+            role,
+            style,
+            question
         });
         
         try {
-            const result = await llm.invoke(formattedChatPrompt);
+            const result = await llm.invoke(formattedPrompt);
 
             answer = result?.content as string
 
@@ -364,6 +339,7 @@ We can also try "few shot prompting" where we give the LLM some examples before 
 
         return answer
     }
+
     ```
 </detail>
 
@@ -373,20 +349,27 @@ Fix your test so it will continue to run.
 
 ### Excercise 8
 
+We can also try "few shot prompting" where we give the LLM some examples before asking our question, try [this example in the OpenAI playground](https://platform.openai.com/playground/p/WqBsOKw0bvEae65ajSQPLRfv?model=gpt-3.5-turbo&mode=chat).
+
 Let's start by adding a few shot prompting technique:
 
-<details open>
+<details>
     <summary>src/utils/langchain.ts</summary>
 
     ```ts
-    import { ChatOpenAI } from "langchain/chat_models/openai";
-    import { FewShotChatMessagePromptTemplate, ChatPromptTemplate } from "langchain/prompts";
+    import { ChatOpenAI } from "@langchain/openai";
+    import { ChatPromptTemplate, FewShotChatMessagePromptTemplate } from "@langchain/core/prompts";
 
     const llm = new ChatOpenAI({
-        openAIApiKey: import.meta.env.VITE_OPENAI_KEY
+        openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
+        temperature: 1,
+        modelName: "gpt-4-0125-preview",
     });
 
-    export async function generateAnswer(question: string) {
+    export async function generateAnswer(
+        question: string,
+        promptTemplate: string = "Take the role of a Personal travel assistant, that answers questions in a consistent way."
+    ) {
         let answer = ''
 
         const examples = [
@@ -396,32 +379,32 @@ Let's start by adding a few shot prompting technique:
             },
             {
                 input: "What is the best time of the year to visit The Netherlands?",
-                output: "The best season for tourists to visit The Netherlands is the summer",
+                output: "Summer",
             },
         ];
 
-        const examplePrompt = ChatPromptTemplate.fromTemplate(`Human: {input}
-AI: {output}`);
+        const examplePrompt = ChatPromptTemplate.fromTemplate(`User: {input}
+    Assistant: {output}`);
 
         const fewShotPrompt = new FewShotChatMessagePromptTemplate({
-            prefix:
-            "Take the role of a personal travel agent, answer the question using the following examples",
-            suffix: "Human: {input} AI:",
+            prefix: promptTemplate,
+            suffix: "User: {input} Assistant:",
             examplePrompt,
             examples,
             inputVariables: ["input"],
         });
 
-        const formattedChatPrompt = await fewShotPrompt.format({
+        const formattedPrompt = await fewShotPrompt.format({
             input: question,
         });
-        
+
         try {
-            const result = await llm.invoke(formattedChatPrompt);
+            const result = await llm.invoke(formattedPrompt);
 
             answer = result?.content as string
-
         } catch (e) {
+            console.log(e)
+
             return 'Something went wrong'
         }
 
@@ -430,9 +413,11 @@ AI: {output}`);
     ```
 </details>
 
-Ask a question like "What are the highlights in amsterdam?" and the response should match the format of the examples. Try for yourself, see the difference when you change the provided examples.
+Ask a question like "What are the best museums in amsterdam?" and the response should match the format of the examples. Try for yourself, see the difference when you change the provided examples.
 
 BONUS: Edit the application to allow follow-up questions by [passing the chat history](https://js.langchain.com/docs/modules/memory/how_to/summary#usage-with-an-llm).
+
+BONUS: You can also implement few shot prompting without using chat, for this you can use [prompt pipelines](https://js.langchain.com/docs/modules/model_io/prompts/pipeline).
 
 ### Excercise 9
 
@@ -449,14 +434,13 @@ We'll use a local in-memory vectorstore as this is a demo environment, by making
 
     ```ts
     // ...
-    import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+    import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
+    import { ChatPromptTemplate, FewShotChatMessagePromptTemplate } from "@langchain/core/prompts";
     import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
     import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
-    const llm = new ChatOpenAI({
-        openAIApiKey: import.meta.env.VITE_OPENAI_KEY
-    });
-
+    // ...
+    
     let vectorStore: MemoryVectorStore;
 
     export async function generateAndStoreEmbeddings() {
@@ -505,40 +489,65 @@ In `src/App.tsx` we need to load this data on the first render:
     ```
 </details>
 
-The next step is to change the `generateAnswer` function to use the data stored in the vectorstore:
+The next step is to create a new function for the `generateAnswer` function to use the data stored in the vectorstore:
 
 <details open>
     <summary>src/utils/langchain.ts</summary>
 
     ```ts
     // ...
-    import { RetrievalQAChain, loadQARefineChain } from "langchain/chains";
+    import { createRetrievalChain } from "langchain/chains/retrieval";
+    import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 
-    const llm = new ChatOpenAI({
-    openAIApiKey: import.meta.env.VITE_OPENAI_KEY
-    });
+    // ...
+    
+    export async function generateAnswerRAG(question: string) {
+        let answer = ''
 
-    let vectorStore: MemoryVectorStore;
+        const prompt = ChatPromptTemplate.fromTemplate(`
+    Answer the following question based only on the provided context:
 
-    export async function generateAnswer(question: string) {
-        const chain = new RetrievalQAChain({
-            combineDocumentsChain: loadQARefineChain(llm),
-            retriever: vectorStore.asRetriever(),
+    <context>
+    {context}
+    </context>
+
+    Question: {input}`
+        );
+
+        const documentChain = await createStuffDocumentsChain({
+            llm,
+            prompt,
         });
 
-        const result = await chain.call({
-            query: question,
+        const retriever = vectorStore.asRetriever();
+
+        const retrievalChain = await createRetrievalChain({
+            combineDocsChain: documentChain,
+            retriever,
         });
 
-        return result.output_text;
+        try {
+            const result = await retrievalChain.invoke({
+                input: question,
+              });
+
+            answer = result?.answer
+        } catch (e) {
+            console.log(e)
+
+            return 'Something went wrong'
+        }
+
+        return answer
     }
-
-    // Everything else ...
-
     ```
 </details>
 
+And finally, use this new function in `src/App.tsx`.
+
 If you ask a question now, it will inject the data from the document. Try this out with multiple (follow-up) questions.
+
+BONUS: Add the prompt template for few shot prompting back into this new function.
 
 ## Where to go from here
 
