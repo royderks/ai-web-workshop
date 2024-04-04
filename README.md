@@ -50,9 +50,9 @@ Next, we'll create a new file called `src/utils/langchain.ts` and add the follow
     ```ts
     import { OpenAI } from "@langchain/openai";
 
-  const llm = new OpenAI({
-      openAIApiKey: import.meta.env.VITE_OPENAI_KEY
-  });
+      const llm = new OpenAI({
+          openAIApiKey: import.meta.env.VITE_OPENAI_KEY
+      });
     ```
 </details>
 
