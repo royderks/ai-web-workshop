@@ -46,14 +46,14 @@ Next, we'll create a new file called `src/utils/langchain.ts` and add the follow
 
 <details open>
     <summary>src/utils/langchain.ts</summary>
+  
+    ```ts
+    import { OpenAI } from "@langchain/openai";
+    const llm = new OpenAI({
+      openAIApiKey: import.meta.env.VITE_OPENAI_KEY
+      });
+    ```
 
-```ts
-import { OpenAI } from "@langchain/openai";
-
-const llm = new OpenAI({
-  openAIApiKey: import.meta.env.VITE_OPENAI_KEY
-});
-```
 </details>
 
 This will initialize a connection to OpenAI using LangChain and let us access the models. 
