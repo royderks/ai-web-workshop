@@ -53,6 +53,7 @@ Next, we'll create a new file called `src/utils/langchain.ts` and add the follow
       openAIApiKey: import.meta.env.VITE_OPENAI_KEY
       });
     ```
+
 </details>
 
 This will initialize a connection to OpenAI using LangChain and let us access the models. 
@@ -61,20 +62,20 @@ We'll create our first function that can be used to generate an answer for a que
 
 <details open>
     <summary>src/utils/langchain.ts</summary>
-  
-    ```ts
-    export async function generateAnswer(question: string) {
-        let answer = ''
 
-        try {
-          answer = await llm.invoke(question);
-        } catch (e) {
-            return 'Something went wrong'
-        }
+```ts
+export async function generateAnswer(question: string) {
+    let answer = '';
 
-        return answer
+    try {
+        answer = await llm.invoke(question);
+    } catch (e) {
+        return 'Something went wrong';
     }
-    ```
+
+    return answer;
+}
+```
 </details>
 
 To test if what we've done is working, create new file called `src/utils/langchain.test.ts` and write a test for the function `generateAnswer`.
@@ -84,20 +85,20 @@ Take the following code and modify it so the test will succeed:
 <details open>
     <summary>src/utils/langchain.test.ts</summary>
 
-    ```ts
-    import { describe, it, assert } from 'vitest';
-    import { generateAnswer } from './langchain';
+```ts
+import { describe, it, assert } from 'vitest';
+import { generateAnswer } from './langchain';
 
-    describe('LangChain', () => {
-        it('Answers a question', async () => {
-            // 1. Add your own question here
-            const answer = await generateAnswer('YOUR QUESTION');
+describe('LangChain', () => {
+    it('Answers a question', async () => {
+        // 1. Add your own question here
+        const answer = await generateAnswer('YOUR QUESTION');
 
-            // 2. Match the answer from the LLM to a predicted value
-            assert.equal(answer.trim(), "THE ANSWER");
-        });
+        // 2. Match the answer from the LLM to a predicted value
+        assert.equal(answer.trim(), "THE ANSWER");
     });
-    ```
+});
+```
 </details>
 
 Run `npm run test` to run the above test. Make sure your test is succeeding.
@@ -113,18 +114,18 @@ From our `App` component in `src/App.tsx`, we need to call the `generateAnswer` 
 <details open>
     <summary>src/App.tsx</summary>
 
-    ```ts
-    import { useState } from "react";
-    import { generateAnswer } from "./utils/langchain";
+```ts
+import { useState } from "react";
+import { generateAnswer } from "./utils/langchain";
 
-    export default function App() {
-        const [question, setQuestion] = useState("")
-        const [result, setResult] = useState({ question: "", answer: ""})
+export default function App() {
+    const [question, setQuestion] = useState("");
+    const [result, setResult] = useState({ question: "", answer: "" });
 
-        // Everything else ...
+    // Everything else ...
 
-    }
-    ```
+}
+```
 </details>
 
 To call the `generateAnswer` function and add the question and answer to the state, you'll need to create a handler function. Add the following code to `src/App.tsx` and modify it so the state variable `result` contains both the question and answer. 
@@ -132,24 +133,23 @@ To call the `generateAnswer` function and add the question and answer to the sta
 <details open>
     <summary>src/App.tsx</summary>
 
-    ```ts
-    // ...
+```ts
+// ...
 
-    export default function App() {
-        const [question, setQuestion] = useState("")
-        const [result, setResult] = useState({ question: "", answer: ""})
+export default function App() {
+    const [question, setQuestion] = useState("");
+    const [result, setResult] = useState({ question: "", answer: "" });
 
-        async function handleSubmitQuestion(input: string) {
-            // 1. Store the question in state
-            // 2. Call `generateAnswer` and store the answer in state
-        }
-
-        return (
-
-            // Everything else...
-        )
+    async function handleSubmitQuestion(input: string) {
+        // 1. Store the question in state
+        // 2. Call `generateAnswer` and store the answer in state
     }
-    ```
+
+    return (
+        // Everything else...
+    );
+}
+```
 </details>
 
 Then, turn the `textarea` element into a controlled component that updates the `question` state variable whenever you type something. Also, the handler function we created above must be called when you submit the form.
@@ -163,31 +163,31 @@ When you submit the form, you want to see the question and the answer displayed 
 <details open>
     <summary>src/components/Message/Message.tsx</summary>
 
-    ```ts
-    type MessageProps = {
-        sender: string
-        title: string,
-        message: string,
-        timestamp?: string
-    }
+```ts
+type MessageProps = {
+    sender: string
+    title: string,
+    message: string,
+    timestamp?: string
+}
 
-    export default function Message({ sender, title, message, timestamp = "" }: MessageProps) {
-        return (
-            <div className="flex items-start gap-2.5 mx-8 mb-4">
-                <div className="w-8 h-8 rounded-full bg-red-300">
-                    <span className="w-8 h-8 flex justify-center items-center">{sender}</span>
+export default function Message({ sender, title, message, timestamp = "" }: MessageProps) {
+    return (
+        <div className="flex items-start gap-2.5 mx-8 mb-4">
+            <div className="w-8 h-8 rounded-full bg-red-300">
+                <span className="w-8 h-8 flex justify-center items-center">{sender}</span>
+            </div>
+            <div className="flex flex-col w-full leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{title}</span>
+                    {timestamp && <span className="text-sm font-normal text-gray-500 dark:text-gray-400">{timestamp}</span>}
                 </div>
-                <div className="flex flex-col w-full leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
-                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white">{title}</span>
-                        {timestamp && <span className="text-sm font-normal text-gray-500 dark:text-gray-400">{timestamp}</span>}
-                    </div>
-                    <p className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">{message}</p>
-                </div>
+                <p className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">{message}</p>
+            </div>
         </div>
-        )
-    }
-    ```
+    );
+}
+```
 </details>
 
 Render this component from `src/App.tsx` so it shows the question and the answer. You can use a name like "Me" for the question, and "GPT (or "AI") for the answer:
@@ -195,27 +195,27 @@ Render this component from `src/App.tsx` so it shows the question and the answer
 <details open>
     <summary>src/App.tsx</summary>
 
-    ```ts
-    import { useState } from "react";
-    import { generateAnswer } from "./utils/langchain";
-    // 1. import `Message` component
+```ts
+import { useState } from "react";
+import { generateAnswer } from "./utils/langchain";
+// 1. import `Message` component
 
-    export default function App() {
+export default function App() {
+    // ...
+
+    return (
         // ...
 
-        return (
-            // ...
-
-            <div className="h-full ">
-                  <div className="h-full flex flex-col items-center text-sm dark:bg-gray-800">
-                      // 2. Render the Message component for the question and answer
-                  </div>
+        <div className="h-full ">
+              <div className="h-full flex flex-col items-center text-sm dark:bg-gray-800">
+                  // 2. Render the Message component for the question and answer
               </div>
-            
-            // ...
-        )
-    }
-    ```
+          </div>
+        
+        // ...
+    );
+}
+```
 </details>
 
 When you complete this excercise you should be able to type a question, submit the form and see both the answer and question displayed on the screen.
@@ -227,19 +227,19 @@ The response from OpenAI might take some time to be delivered. That's why adding
 <details open>
     <summary>src/components/Loader/Loader.tsx</summary>
 
-    ```ts
-    export default function Loader() {
-        return (
-            <div role="status">
-                <svg aria-hidden="true" className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
-                    <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
-                </svg>
-                <span className="sr-only">Loading...</span>
-            </div>
-        )
-    }
-    ```
+```ts
+export default function Loader() {
+    return (
+        <div role="status">
+            <svg aria-hidden="true" className="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+                <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+            </svg>
+            <span className="sr-only">Loading...</span>
+        </div>
+    );
+}
+```
 </details>
 
 You can use this component in `src/App.tsx` to show a loading indicator when you're waiting for the request to OpenAI to resolve.
@@ -277,14 +277,14 @@ You can modify these values in `src/utils/langchain.ts`:
 <details open>
     <summary>src/utils/langchain.ts</summary>
   
-    ```ts
-    const llm = new OpenAI({
-        openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
-        temperature: 0.9, // Can be between 0 and 1
-        modelName: "gpt-4-0125-preview", // Default. Other options: https://platform.openai.com/docs/models/
-        maxTokens: 300 // length of response, tokens !== characters
-    });
-    ```
+```ts
+const llm = new OpenAI({
+    openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
+    temperature: 0.9, // Can be between 0 and 1
+    modelName: "gpt-4-0125-preview", // Default. Other options: https://platform.openai.com/docs/models/
+    maxTokens: 300 // length of response, tokens !== characters
+});
+```
 </details>
 
 Play around with different values, both in your code and the OpenAI playground. How does this impact the quality or style of the answer?
@@ -298,48 +298,46 @@ Before implementing a new type of prompting, we'll need to implement a chat mode
 <details>
     <summary>src/utils/langchain.ts</summary>
 
-    ```ts
-    import { ChatOpenAI } from "@langchain/openai";
-    import { ChatPromptTemplate } from "@langchain/core/prompts";
+```ts
+import { ChatOpenAI } from "@langchain/openai";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
 
-    const llm = new ChatOpenAI({
-        openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
-        temperature: 1,
-        modelName: "gpt-4-0125-preview", 
+const llm = new ChatOpenAI({
+    openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
+    temperature: 1,
+    modelName: "gpt-4-0125-preview", 
+});
+
+export async function generateAnswer(
+    question: string,
+    promptTemplate: string = "Take the role of a {role}, that answers questions in a {style} way.",
+    role: string = "Personal travel assistant",
+    style: string = "consistent" // What happens if you change this to detailed?
+) {
+    let answer = ''
+
+    const chatPrompt = ChatPromptTemplate.fromMessages([
+        ["System", promptTemplate],
+        ["User", "{question}"],
+    ]);
+
+    const formattedPrompt = await chatPrompt.formatMessages({
+        role,
+        style,
+        question
     });
-
-    export async function generateAnswer(
-        question: string,
-        promptTemplate: string = "Take the role of a {role}, that answers questions in a {style} way.",
-        role: string = "Personal travel assistant",
-        style: string = "consistent" // What happens if you change this to detailed?
-    ) {
-        let answer = ''
-
-        const chatPrompt = ChatPromptTemplate.fromMessages([
-            ["System", promptTemplate],
-            ["User", "{question}"],
-        ])
-
-        const formattedPrompt = await chatPrompt.formatMessages({
-            role,
-            style,
-            question
-        });
-        
-        try {
-            const result = await llm.invoke(formattedPrompt);
-
-            answer = result?.content as string
-
-        } catch (e) {
-            return 'Something went wrong'
-        }
-
-        return answer
+    
+    try {
+        const result = await llm.invoke(formattedPrompt);
+        answer = result?.content as string;
+    } catch (e) {
+        return 'Something went wrong';
     }
 
-    ```
+    return answer;
+}
+
+```
 </detail>
 
 In the above setup we made it easier to change the input variables, and by using a Chat model instead of LLM model we can start implementing different prompting techniques. You might see there's a `human` and `system` template, as in the Chat model subsequent messages are being used as context.
@@ -355,61 +353,59 @@ Let's start by adding a few shot prompting technique:
 <details>
     <summary>src/utils/langchain.ts</summary>
 
-    ```ts
-    import { ChatOpenAI } from "@langchain/openai";
-    import { ChatPromptTemplate, FewShotChatMessagePromptTemplate } from "@langchain/core/prompts";
+```ts
+import { ChatOpenAI } from "@langchain/openai";
+import { ChatPromptTemplate, FewShotChatMessagePromptTemplate } from "@langchain/core/prompts";
 
-    const llm = new ChatOpenAI({
-        openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
-        temperature: 1,
-        modelName: "gpt-4-0125-preview",
+const llm = new ChatOpenAI({
+    openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
+    temperature: 1,
+    modelName: "gpt-4-0125-preview",
+});
+
+export async function generateAnswer(
+    question: string,
+    promptTemplate: string = "Take the role of a Personal travel assistant, that answers questions in a consistent way."
+) {
+    let answer = '';
+
+    const examples = [
+        {
+            input: "What are the best restaurants in Amsterdam?",
+            output: "The highest rated restaurants in Amsterdam are (1), (2), (3)",
+        },
+        {
+            input: "What is the best time of the year to visit The Netherlands?",
+            output: "Summer",
+        },
+    ];
+
+    const examplePrompt = ChatPromptTemplate.fromTemplate(`User: {input}
+Assistant: {output}`);
+
+    const fewShotPrompt = new FewShotChatMessagePromptTemplate({
+        prefix: promptTemplate,
+        suffix: "User: {input} Assistant:",
+        examplePrompt,
+        examples,
+        inputVariables: ["input"],
     });
 
-    export async function generateAnswer(
-        question: string,
-        promptTemplate: string = "Take the role of a Personal travel assistant, that answers questions in a consistent way."
-    ) {
-        let answer = ''
+    const formattedPrompt = await fewShotPrompt.format({
+        input: question,
+    });
 
-        const examples = [
-            {
-                input: "What are the best restaurants in Amsterdam?",
-                output: "The highest rated restaurants in Amsterdam are (1), (2), (3)",
-            },
-            {
-                input: "What is the best time of the year to visit The Netherlands?",
-                output: "Summer",
-            },
-        ];
-
-        const examplePrompt = ChatPromptTemplate.fromTemplate(`User: {input}
-    Assistant: {output}`);
-
-        const fewShotPrompt = new FewShotChatMessagePromptTemplate({
-            prefix: promptTemplate,
-            suffix: "User: {input} Assistant:",
-            examplePrompt,
-            examples,
-            inputVariables: ["input"],
-        });
-
-        const formattedPrompt = await fewShotPrompt.format({
-            input: question,
-        });
-
-        try {
-            const result = await llm.invoke(formattedPrompt);
-
-            answer = result?.content as string
-        } catch (e) {
-            console.log(e)
-
-            return 'Something went wrong'
-        }
-
-        return answer
+    try {
+        const result = await llm.invoke(formattedPrompt);
+        answer = result?.content as string;
+    } catch (e) {
+        console.log(e);
+        return 'Something went wrong';
     }
-    ```
+
+    return answer;
+}
+```
 </details>
 
 Ask a question like "What are the best museums in amsterdam?" and the response should match the format of the examples. Try for yourself, see the difference when you change the provided examples.
@@ -431,36 +427,36 @@ We'll use a local in-memory vectorstore as this is a demo environment, by making
 <details open>
     <summary>src/utils/langchain.ts</summary>
 
-    ```ts
-    // ...
-    import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
-    import { ChatPromptTemplate, FewShotChatMessagePromptTemplate } from "@langchain/core/prompts";
-    import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-    import { MemoryVectorStore } from "langchain/vectorstores/memory";
+```ts
+// ...
+import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
+import { ChatPromptTemplate, FewShotChatMessagePromptTemplate } from "@langchain/core/prompts";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
 
-    // ...
-    
-    let vectorStore: MemoryVectorStore;
+// ...
 
-    export async function generateAndStoreEmbeddings() {
-        const trainingText = await fetch("/data.txt")
-            .then((response) => response.text())
-            .then((text) => text)
+let vectorStore: MemoryVectorStore;
 
-        const textSplitter = new RecursiveCharacterTextSplitter({
-            chunkSize: 1000,
-        });
+export async function generateAndStoreEmbeddings() {
+    const trainingText = await fetch("/data.txt")
+        .then((response) => response.text())
+        .then((text) => text);
 
-        const docs = await textSplitter.createDocuments([trainingText]);
+    const textSplitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 1000,
+    });
 
-        vectorStore = await MemoryVectorStore.fromDocuments(
-            docs,
-            new OpenAIEmbeddings({ openAIApiKey: import.meta.env.VITE_OPENAI_KEY }),
-        );
-    }
+    const docs = await textSplitter.createDocuments([trainingText]);
 
-    // Everything else ...
-    ```
+    vectorStore = await MemoryVectorStore.fromDocuments(
+        docs,
+        new OpenAIEmbeddings({ openAIApiKey: import.meta.env.VITE_OPENAI_KEY }),
+    );
+}
+
+// Everything else ...
+```
 </details>
 
 In `src/App.tsx` we need to load this data on the first render:
@@ -468,24 +464,24 @@ In `src/App.tsx` we need to load this data on the first render:
 <details open>
     <summary>src/App.tsx</summary>
 
-    ```ts
-    // src/App.tsx
-    import { useEffect, useState } from "react";
-    import { generateAnswer, generateAndStoreEmbeddings } from "./utils/langchain";
-    import Message from "./components/Message/Message";
-    import Loader from "./components/Loader/Loader";
+```ts
+// src/App.tsx
+import { useEffect, useState } from "react";
+import { generateAnswer, generateAndStoreEmbeddings } from "./utils/langchain";
+import Message from "./components/Message/Message";
+import Loader from "./components/Loader/Loader";
 
-    export default function App() {
-    const [question, setQuestion] = useState("")
-    const [result, setResult] = useState({ question: "", answer: ""})
-    const [loading, setLoading] = useState(false)
-
+export default function App() {
+    const [question, setQuestion] = useState("");
+    const [result, setResult] = useState({ question: "", answer: "" });
+    const [loading, setLoading] = useState(false);
+    
     // 1. Load data into vector store
-
+    
     // Everything else ...
-
-    }
-    ```
+    
+}
+```
 </details>
 
 The next step is to create a new function for the `generateAnswer` function to use the data stored in the vectorstore:
@@ -493,53 +489,51 @@ The next step is to create a new function for the `generateAnswer` function to u
 <details open>
     <summary>src/utils/langchain.ts</summary>
 
-    ```ts
-    // ...
-    import { createRetrievalChain } from "langchain/chains/retrieval";
-    import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
+```ts
+// ...
+import { createRetrievalChain } from "langchain/chains/retrieval";
+import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 
-    // ...
-    
-    export async function generateAnswerRAG(question: string) {
-        let answer = ''
+// ...
 
-        const prompt = ChatPromptTemplate.fromTemplate(`
-    Answer the following question based only on the provided context:
+export async function generateAnswerRAG(question: string) {
+    let answer = '';
 
-    <context>
-    {context}
-    </context>
+    const prompt = ChatPromptTemplate.fromTemplate(`
+Answer the following question based only on the provided context:
 
-    Question: {input}`
-        );
+<context>
+{context}
+</context>
 
-        const documentChain = await createStuffDocumentsChain({
-            llm,
-            prompt,
+Question: {input}`
+    );
+
+    const documentChain = await createStuffDocumentsChain({
+        llm,
+        prompt,
+    });
+
+    const retriever = vectorStore.asRetriever();
+
+    const retrievalChain = await createRetrievalChain({
+        combineDocsChain: documentChain,
+        retriever,
+    });
+
+    try {
+        const result = await retrievalChain.invoke({
+            input: question,
         });
-
-        const retriever = vectorStore.asRetriever();
-
-        const retrievalChain = await createRetrievalChain({
-            combineDocsChain: documentChain,
-            retriever,
-        });
-
-        try {
-            const result = await retrievalChain.invoke({
-                input: question,
-              });
-
-            answer = result?.answer
-        } catch (e) {
-            console.log(e)
-
-            return 'Something went wrong'
-        }
-
-        return answer
+        answer = result?.answer;
+    } catch (e) {
+        console.log(e);
+        return 'Something went wrong';
     }
-    ```
+
+    return answer;
+}
+```
 </details>
 
 And finally, use this new function in `src/App.tsx`.
