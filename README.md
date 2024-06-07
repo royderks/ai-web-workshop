@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* OpenAI API Key. You can sign up for a [free trial](https://openai.com/pricing) > "Login".
+- OpenAI API Key. You can sign up for a [free trial](https://openai.com/pricing) > "Login".
 
 ## Installation
 
@@ -56,7 +56,7 @@ Next, we'll create a new file called `src/utils/langchain.ts` and add the follow
 
 </details>
 
-This will initialize a connection to OpenAI using LangChain and let us access the models. 
+This will initialize a connection to OpenAI using LangChain and let us access the models.
 
 We'll create our first function that can be used to generate an answer for a question, add the following to the bottom of the file:
 
@@ -76,6 +76,7 @@ export async function generateAnswer(question: string) {
     return answer;
 }
 ```
+
 </details>
 
 To test if what we've done is working, create new file called `src/utils/langchain.test.ts` and write a test for the function `generateAnswer`.
@@ -99,6 +100,7 @@ describe('LangChain', () => {
     });
 });
 ```
+
 </details>
 
 Run `npm run test` to run the above test. Make sure your test is succeeding.
@@ -126,9 +128,10 @@ export default function App() {
 
 }
 ```
+
 </details>
 
-To call the `generateAnswer` function and add the question and answer to the state, you'll need to create a handler function. Add the following code to `src/App.tsx` and modify it so the state variable `result` contains both the question and answer. 
+To call the `generateAnswer` function and add the question and answer to the state, you'll need to create a handler function. Add the following code to `src/App.tsx` and modify it so the state variable `result` contains both the question and answer.
 
 <details open>
     <summary>src/App.tsx</summary>
@@ -150,11 +153,12 @@ export default function App() {
     );
 }
 ```
+
 </details>
 
 Then, turn the `textarea` element into a controlled component that updates the `question` state variable whenever you type something. Also, the handler function we created above must be called when you submit the form.
 
-Submit the form and have a look at the *"Network tab"* in the browser, make sure you see a request to OpenAI that includes your question and resolves to an answer.
+Submit the form and have a look at the _"Network tab"_ in the browser, make sure you see a request to OpenAI that includes your question and resolves to an answer.
 
 ### Excercise 3
 
@@ -188,6 +192,7 @@ export default function Message({ sender, title, message, timestamp = "" }: Mess
     );
 }
 ```
+
 </details>
 
 Render this component from `src/App.tsx` so it shows the question and the answer. You can use a name like "Me" for the question, and "GPT (or "AI") for the answer:
@@ -211,11 +216,12 @@ export default function App() {
                   // 2. Render the Message component for the question and answer
               </div>
           </div>
-        
+
         // ...
     );
 }
 ```
+
 </details>
 
 When you complete this excercise you should be able to type a question, submit the form and see both the answer and question displayed on the screen.
@@ -240,6 +246,7 @@ export default function Loader() {
     );
 }
 ```
+
 </details>
 
 You can use this component in `src/App.tsx` to show a loading indicator when you're waiting for the request to OpenAI to resolve.
@@ -298,47 +305,48 @@ Before implementing a new type of prompting, we'll need to implement a chat mode
 <details>
     <summary>src/utils/langchain.ts</summary>
 
-```ts
-import { ChatOpenAI } from "@langchain/openai";
-import { ChatPromptTemplate } from "@langchain/core/prompts";
+    ```ts
+    import { ChatOpenAI } from "@langchain/openai";
+    import { ChatPromptTemplate } from "@langchain/core/prompts";
 
-const llm = new ChatOpenAI({
-    openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
-    temperature: 1,
-    modelName: "gpt-4-0125-preview", 
-});
-
-export async function generateAnswer(
-    question: string,
-    promptTemplate: string = "Take the role of a {role}, that answers questions in a {style} way.",
-    role: string = "Personal travel assistant",
-    style: string = "consistent" // What happens if you change this to detailed?
-) {
-    let answer = ''
-
-    const chatPrompt = ChatPromptTemplate.fromMessages([
-        ["System", promptTemplate],
-        ["User", "{question}"],
-    ]);
-
-    const formattedPrompt = await chatPrompt.formatMessages({
-        role,
-        style,
-        question
+    const llm = new ChatOpenAI({
+        openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
+        temperature: 1,
+        modelName: "gpt-4-0125-preview",
     });
-    
-    try {
-        const result = await llm.invoke(formattedPrompt);
-        answer = result?.content as string;
-    } catch (e) {
-        return 'Something went wrong';
+
+    export async function generateAnswer(
+        question: string,
+        promptTemplate: string = "Take the role of a {role}, that answers questions in a {style} way.",
+        role: string = "Personal travel assistant",
+        style: string = "consistent" // What happens if you change this to detailed?
+    ) {
+        let answer = ''
+
+        const chatPrompt = ChatPromptTemplate.fromMessages([
+            ["System", promptTemplate],
+            ["User", "{question}"],
+        ]);
+
+        const formattedPrompt = await chatPrompt.formatMessages({
+            role,
+            style,
+            question
+        });
+
+        try {
+            const result = await llm.invoke(formattedPrompt);
+            answer = result?.content as string;
+        } catch (e) {
+            return 'Something went wrong';
+        }
+
+        return answer;
     }
 
-    return answer;
-}
+    ```
 
-```
-</detail>
+</details>
 
 In the above setup we made it easier to change the input variables, and by using a Chat model instead of LLM model we can start implementing different prompting techniques. You might see there's a `human` and `system` template, as in the Chat model subsequent messages are being used as context.
 
@@ -406,6 +414,7 @@ Assistant: {output}`);
     return answer;
 }
 ```
+
 </details>
 
 Ask a question like "What are the best museums in amsterdam?" and the response should match the format of the examples. Try for yourself, see the difference when you change the provided examples.
@@ -457,6 +466,7 @@ export async function generateAndStoreEmbeddings() {
 
 // Everything else ...
 ```
+
 </details>
 
 In `src/App.tsx` we need to load this data on the first render:
@@ -475,13 +485,14 @@ export default function App() {
     const [question, setQuestion] = useState("");
     const [result, setResult] = useState({ question: "", answer: "" });
     const [loading, setLoading] = useState(false);
-    
+
     // 1. Load data into vector store
-    
+
     // Everything else ...
-    
+
 }
 ```
+
 </details>
 
 The next step is to create a new function for the `generateAnswer` function to use the data stored in the vectorstore:
@@ -534,6 +545,7 @@ Question: {input}`
     return answer;
 }
 ```
+
 </details>
 
 And finally, use this new function in `src/App.tsx`.
@@ -547,5 +559,3 @@ BONUS: Add the prompt template for few shot prompting back into this new functio
 - Document Loaders
 - RAG (Retrieval Augmented Generation)
 - Agents
-
-
