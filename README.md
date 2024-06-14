@@ -324,8 +324,8 @@ Before implementing a new type of prompting, we'll need to implement a chat mode
         let answer = ''
 
         const chatPrompt = ChatPromptTemplate.fromMessages([
-            ["System", promptTemplate],
-            ["User", "{question}"],
+            ["system", promptTemplate],
+            ["human", "{question}"],
         ]);
 
         const formattedPrompt = await chatPrompt.formatMessages({
