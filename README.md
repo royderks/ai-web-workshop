@@ -63,31 +63,33 @@ VITE_WATSONX_PROJECT_ID=
 VITE_WATSONX_APIKEY=
 ```
 
-Next, we'll create a new file called `src/utils/langchain.ts` and add the following code:
+Next, we'll create a new file called `src/utils/langchain.js` and add the following code:
 
 <details open>
-    <summary>src/utils/langchain.ts</summary>
+    <summary>src/utils/langchain.js</summary>
   
-```ts
+```js
 import { OpenAI } from "@langchain/openai";
-
-const model = new OpenAI({
-    openAIApiKey: import.meta.env.VITE_OPENAI_APIKEY,
-    model: "gpt-3.5-turbo-instruct", 
-    temperature: 0 // lower temperature = less deterministic
-});
-
 // Or for watsonx
 import { WatsonxAI } from "@langchain/community/llms/watsonx_ai";
 
-const model = new WatsonxAI({
-    modelId: "ibm/granite-13b-instruct-v2",
-    ibmCloudApiKey: import.meta.env.VITE_WATSONX_APIKEY,
-    projectId: import.meta.env.VITE_WATSONX_PROJECT_ID,
-    modelParameters: {
-        temperature: 0
-    },
-});
+export async function generateAnswer(question) {
+    const model = new OpenAI({
+        openAIApiKey: import.meta.env.VITE_OPENAI_APIKEY,
+        model: "gpt-3.5-turbo-instruct", 
+        temperature: 0 // lower temperature = less deterministic
+    });
+
+    // Or for watsonx
+    const model = new WatsonxAI({
+        modelId: "ibm/granite-13b-instruct-v2",
+        ibmCloudApiKey: import.meta.env.VITE_WATSONX_APIKEY,
+        projectId: import.meta.env.VITE_WATSONX_PROJECT_ID,
+        modelParameters: {
+            temperature: 0
+        },
+    });
+}
 ```
 
 </details>
@@ -100,16 +102,16 @@ This will initialize a connection to the LLM Provider using LangChain and let us
 We'll create our first function that can be used to generate an answer for a question, add the following to the bottom of the file:
 
 <details open>
-    <summary>src/utils/langchain.ts</summary>
+    <summary>src/utils/langchain.js</summary>
 
-```ts
-// const model = ...
+```js
+export async function generateAnswer(question) {
+    // const model = ...
 
-export async function generateAnswer(question: string) {
     let answer = '';
 
     try {
-        answer = await llm.invoke(question);
+        answer = await model.invoke(question);
     } catch (e) {
         return 'Something went wrong';
     }
@@ -120,14 +122,14 @@ export async function generateAnswer(question: string) {
 
 </details>
 
-To test if what we've done is working, create new file called `src/utils/langchain.test.ts` and write a test for the function `generateAnswer`.
+To test if what we've done is working, create new file called `src/utils/langchain.test.js` and write a test for the function `generateAnswer`.
 
 Take the following code and modify it so the test will succeed:
 
 <details open>
-    <summary>src/utils/langchain.test.ts</summary>
+    <summary>src/utils/langchain.test.js</summary>
 
-```ts
+```js
 import { describe, it, assert } from 'vitest';
 import { generateAnswer } from './langchain';
 
@@ -152,6 +154,48 @@ Hint: Be explicit of what you expect the LLM to return.
 
 ### Excercise 2
 
+To avoid leaking the credentials to the user, we need to set up a server-side request. The application has already been set up to support this. In the file `server.js` add the following:
+
+<details open>
+    <summary>server.js</summary>
+
+```js
+const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+// Add this part
+app.post("/message", async (req, res, next) => {
+  try {
+    const { question } = req?.body
+    const answer = await generateAnswer(question)
+
+    res.json({ answer })
+  } catch (e) { 
+    next(e) 
+  }
+});
+```
+
+</details>
+
+Start the application by running `npm run dev` in the terminal. The application will start, and is availabe at `http://localhost:3000` and `http://localhost:3000/message` for the API.
+
+Can you send a request `http://localhost:3000/message` using cURL, Postman or any other tool you use for testing API requests? 
+
+Hint: The API has the method `POST` and expects JSON with a body containing the field `question`.
+
+<details>
+    <summary>cURL solution</summary>
+
+```bash
+curl -XPOST -H "Content-type: application/json" -d '{ "question": "What is the capital of the UK" }' 'http://localhost:3000/message'
+```
+
+</details>
+
+### Excercise 3
+
 We want to be able to use the messagebox in the application to send the question to the LLM and show the answer in the screen.
 
 From our `App` component in `src/App.tsx`, we need to call the `generateAnswer` function we created in the previous excercise. First, let's create some state variables and import the function:
@@ -164,8 +208,8 @@ import { useState } from "react";
 import { generateAnswer } from "./utils/langchain";
 
 export default function App() {
-    const [question, setQuestion] = useState("");
-    const [result, setResult] = useState({ question: "", answer: "" });
+    const [question, setQuestion] = useState('');
+    const [messages, setMessages] = useState([]);
 
     // Everything else ...
 
@@ -183,12 +227,17 @@ To call the `generateAnswer` function and add the question and answer to the sta
 // ...
 
 export default function App() {
-    const [question, setQuestion] = useState("");
-    const [result, setResult] = useState({ question: "", answer: "" });
+    const [question, setQuestion] = useState('');
+    const [messages, setMessages] = useState([]);
 
     async function handleSubmitQuestion(input: string) {
-        // 1. Store the question in state
-        // 2. Call `generateAnswer` and store the answer in state
+        // 1. Call `generateAnswer` 
+
+        // 2. Store the answer in state in below format
+        return [
+        { role: "users", content: question },
+        { role: "assistant", content: "LLM response" }
+        ]
     }
 
     return (
@@ -200,6 +249,20 @@ export default function App() {
 </details>
 
 Then, turn the `textarea` element into a controlled component that updates the `question` state variable whenever you type something. Also, the handler function we created above must be called when you submit the form.
+
+<details closed>
+    <summary>Controlled `textarea` component</summary>
+
+```js
+// ...
+ 
+<textarea
+    value={question}
+    onChange={(e) =>setQuestion(e.currentTarget.value)}
+></textarea>
+```
+
+</details>
 
 Submit the form and have a look at the _"Network tab"_ in the browser, make sure you see a request to OpenAI that includes your question and resolves to an answer.
 
