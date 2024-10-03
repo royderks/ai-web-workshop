@@ -1,10 +1,24 @@
-# AI For Frontend Workshop
+# AI For Web Developers Workshop
 
-![AI For Frontend demo](/assets/chat-app-document-loader.png)
+![AI For Web Developers demo](/assets/chat-app-document-loader.png)
 
 ## Prerequisites
 
-- OpenAI API Key. You can sign up for a [free trial](https://openai.com/pricing) > "Login".
+You need to have an API Key for either OpenAI or IBM watsonx.ai. To get your API Key:
+
+- **OpenAI API**: You can sign up for a [free trial](https://platform.openai.com/), press "Login" in top-right and follow the instructions ($5 credit).
+- **IBM watsonx**: You can sign up for a [free trial](https://www.ibm.com/products/watsonx-ai), press "Start your free trial" and follow the instructions to create an IBM ID & IBM Cloud account (25,000 free tokens).
+
+## Get your credentials
+
+- **OpenAI API**:
+    - After signing up, first check [here](https://platform.openai.com/settings/organization/billing/overview) if you have gotten the free credits. **If you did not get the free credits, you have to add your creditcard information**.
+    - Open the [API Keys page](https://platform.openai.com/api-keys) and create a new API Key. Store the API Key somewhere safe as you need it later.
+- **IBM watsonx**:
+    - After signing up, wait for your sandbox to complete setting up. 
+    - Once the sandbox has loaded, open it and click the "Manage" tab. Copy the project ID from the "Details" section of the "General" page. 
+    - To get your API Key, open the hamburger menu in the top-left and select "Access (IAM)". This will open the IBM Cloud Console, in the menu you have to select ["API Keys"](https://cloud.ibm.com/iam/apikeys) and create a new API Key.
+    - Store both the project ID and API Key somewhere safe as you need it later.
 
 ## Installation
 
