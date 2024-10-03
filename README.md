@@ -6,8 +6,8 @@
 
 You need to have an API Key for either OpenAI or IBM watsonx.ai. To get your API Key:
 
-- **OpenAI API**: You can sign up for a [free trial](https://platform.openai.com/), press "Login" in top-right and follow the instructions ($5 credit).
-- **IBM watsonx**: You can sign up for a [free trial](https://www.ibm.com/products/watsonx-ai), press "Start your free trial" and follow the instructions to create an IBM ID & IBM Cloud account (25,000 free tokens).
+- **OpenAI API**: You can sign up for a [free trial](https://platform.openai.com/) ($5 credit), press "Login" in top-right and follow the instructions.
+- **IBM watsonx**: You can sign up for a [free trial](https://www.ibm.com/products/watsonx-ai) (25,000 free tokens), press "Start your free trial" and follow the instructions to create an IBM ID & IBM Cloud account. Use the region Dallas (`us-south`) when prompted.
 
 ## Get your credentials
 
@@ -44,16 +44,23 @@ You're now ready to start with the excercises.
 
 ### Excercise 1
 
-To interface with the LLMs from OpenAI, we need to install a library called LangChain:
+To interface with the LLMs, we need to install a library called LangChain:
 
 ```bash
 npm install langchain @langchain/openai
+
+# Or for watsonx
+npm install langchain @langchain/community
 ```
 
 After the installation is complete, you should add a new file called `.env` in the root of your Vite application and add the following environment variable:
 
-```txt
-VITE_OPENAI_KEY=sk-********
+```bash
+VITE_OPENAI_APIKEY=sk-********
+
+# Or for watsonx
+VITE_WATSONX_PROJECT_ID=
+VITE_WATSONX_APIKEY=
 ```
 
 Next, we'll create a new file called `src/utils/langchain.ts` and add the following code:
@@ -61,16 +68,34 @@ Next, we'll create a new file called `src/utils/langchain.ts` and add the follow
 <details open>
     <summary>src/utils/langchain.ts</summary>
   
-    ```ts
-    import { OpenAI } from "@langchain/openai";
-    const llm = new OpenAI({
-      openAIApiKey: import.meta.env.VITE_OPENAI_KEY
-      });
-    ```
+```ts
+import { OpenAI } from "@langchain/openai";
+
+const model = new OpenAI({
+    openAIApiKey: import.meta.env.VITE_OPENAI_APIKEY,
+    model: "gpt-3.5-turbo-instruct", 
+    temperature: 0 // lower temperature = less deterministic
+});
+
+// Or for watsonx
+import { WatsonxAI } from "@langchain/community/llms/watsonx_ai";
+
+const model = new WatsonxAI({
+    modelId: "ibm/granite-13b-instruct-v2",
+    ibmCloudApiKey: import.meta.env.VITE_WATSONX_APIKEY,
+    projectId: import.meta.env.VITE_WATSONX_PROJECT_ID,
+    modelParameters: {
+        temperature: 0
+    },
+});
+```
 
 </details>
 
-This will initialize a connection to OpenAI using LangChain and let us access the models.
+This will initialize a connection to the LLM Provider using LangChain and let us access the models. See here for all the supported models and their IDs:
+
+- [OpenAI](https://platform.openai.com/docs/models)
+- [IBM watsonx](https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-api-model-ids.html?context=wx&audience=wdp)
 
 We'll create our first function that can be used to generate an answer for a question, add the following to the bottom of the file:
 
@@ -78,6 +103,8 @@ We'll create our first function that can be used to generate an answer for a que
     <summary>src/utils/langchain.ts</summary>
 
 ```ts
+// const model = ...
+
 export async function generateAnswer(question: string) {
     let answer = '';
 
@@ -107,17 +134,19 @@ import { generateAnswer } from './langchain';
 describe('LangChain', () => {
     it('Answers a question', async () => {
         // 1. Add your own question here
-        const answer = await generateAnswer('YOUR QUESTION');
+        const answer = await generateAnswer('Is the United Kingdom a country, answer "yes" or "no" only.');
+
+        console.log({ answer })
 
         // 2. Match the answer from the LLM to a predicted value
-        assert.equal(answer.trim(), "THE ANSWER");
+        assert.equal(answer.trim().toLowerCase(), "yes");
     });
 });
 ```
 
 </details>
 
-Run `npm run test` to run the above test. Make sure your test is succeeding.
+Run `npm run test` to run the above test. You can change the question and the answer to test a different reponse.
 
 Hint: Be explicit of what you expect the LLM to return.
 
