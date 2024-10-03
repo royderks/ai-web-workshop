@@ -13,7 +13,7 @@ export default function App() {
       setIsLoading(true)
       setError('') // reset error
 
-      const response = await fetch("/message", {
+      const response = await fetch("/api/message", {
         method: "POST",
         body: JSON.stringify({ question: input }),
         headers: {

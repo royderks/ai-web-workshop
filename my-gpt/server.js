@@ -7,7 +7,7 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-app.post("/message", async (req, res, next) => {
+app.post("/api/message", async (req, res, next) => {
   try {
     const { question } = req?.body
     const answer = await generateAnswer(question)
