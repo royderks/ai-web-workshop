@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Message from "./components/Message";
 
 export default function App() {
   const [question, setQuestion] = useState('');
@@ -18,16 +19,15 @@ export default function App() {
       if (response) {
         // 2. Store the answer in state in below format
         setMessages([
-          { role: "users", content: question },
-          { role: "assistant", content: response }
+          ...messages,
+          { role: "user", content: question },
+          { role: "assistant", content: response?.answer }
         ])
       }
     } catch (e) {
       console.error(e)
     }
   }
-
-  console.log({ messages })
 
   return (
     <main className="overflow-hidden w-full h-screen relative flex">
@@ -39,6 +39,11 @@ export default function App() {
             </h1>
             <div className="h-full ">
               <div className="h-full flex flex-col items-center text-sm dark:bg-gray-800">
+                {
+                  messages?.length > 0 && messages.map(({ role, content }) => (
+                    <Message role={role} content={content} />
+                  ))
+                }
               </div>
             </div>
           </div>

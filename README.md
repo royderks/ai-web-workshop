@@ -198,118 +198,68 @@ curl -XPOST -H "Content-type: application/json" -d '{ "question": "What is the c
 
 We want to be able to use the messagebox in the application to send the question to the LLM and show the answer in the screen.
 
-From our `App` component in `src/App.tsx`, we need to call the `generateAnswer` function we created in the previous excercise. First, let's create some state variables and import the function:
+First, create a new component called `src/components/Message.jsx` that we'll use to display the messages:
 
 <details open>
-    <summary>src/App.tsx</summary>
-
-```ts
-import { useState } from "react";
-import { generateAnswer } from "./utils/langchain";
-
-export default function App() {
-    const [question, setQuestion] = useState('');
-    const [messages, setMessages] = useState([]);
-
-    // Everything else ...
-
-}
-```
-
-</details>
-
-To call the `generateAnswer` function and add the question and answer to the state, you'll need to create a handler function. Add the following code to `src/App.tsx` and modify it so the state variable `result` contains both the question and answer.
-
-<details open>
-    <summary>src/App.tsx</summary>
-
-```ts
-// ...
-
-export default function App() {
-    const [question, setQuestion] = useState('');
-    const [messages, setMessages] = useState([]);
-
-    async function handleSubmitQuestion(input: string) {
-        // 1. Call `generateAnswer` 
-
-        // 2. Store the answer in state in below format
-        return [
-        { role: "users", content: question },
-        { role: "assistant", content: "LLM response" }
-        ]
-    }
-
-    return (
-        // Everything else...
-    );
-}
-```
-
-</details>
-
-Then, turn the `textarea` element into a controlled component that updates the `question` state variable whenever you type something. Also, the handler function we created above must be called when you submit the form.
-
-<details closed>
-    <summary>Controlled `textarea` component</summary>
+    <summary>src/components/Message.jsx</summary>
 
 ```js
-// ...
- 
-<textarea
-    value={question}
-    onChange={(e) =>setQuestion(e.currentTarget.value)}
-></textarea>
-```
+export default function Message({ role, content }) {
 
-</details>
-
-Submit the form and have a look at the _"Network tab"_ in the browser, make sure you see a request to OpenAI that includes your question and resolves to an answer.
-
-### Excercise 3
-
-When you submit the form, you want to see the question and the answer displayed in the screen. Create a new component called `Message` in `src/components/Message/Message.tsx`, we'll use this component to render the question and the answer:
-
-<details open>
-    <summary>src/components/Message/Message.tsx</summary>
-
-```ts
-type MessageProps = {
-    sender: string
-    title: string,
-    message: string,
-    timestamp?: string
-}
-
-export default function Message({ sender, title, message, timestamp = "" }: MessageProps) {
     return (
         <div className="flex items-start gap-2.5 mx-8 mb-4">
-            <div className="w-8 h-8 rounded-full bg-red-300">
-                <span className="w-8 h-8 flex justify-center items-center">{sender}</span>
+            <div className="z-10 w-8 h-8 rounded-full bg-red-300">
+                <span className="w-8 h-8 flex justify-center items-center">{role}</span>
             </div>
             <div className="flex flex-col w-full leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{title}</span>
-                    {timestamp && <span className="text-sm font-normal text-gray-500 dark:text-gray-400">{timestamp}</span>}
-                </div>
-                <p className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">{message}</p>
+                <p className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">{content}</p>
             </div>
         </div>
     );
 }
 ```
 
+From our `App` component in `src/App.js`, we can import this component and make the existing function `handleSubmitQuestion` work with the API we created in excercise 2:
+
+<details open>
+    <summary>src/App.js</summary>
+
+```js
+import { useState } from "react";
+import Message from "./components/Message";
+
+export default function App() {
+  const [question, setQuestion] = useState('');
+  const [messages, setMessages] = useState([])
+
+  async function handleSubmitQuestion(input) {
+    try {
+        // 1. Call `/message` 
+        // 2. Store the answer in state in below format
+        // setMessages([
+        //   { role: "user", content: "question" },
+        //   { role: "assistant", content: "answer" }
+        // ])
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  // ...
+```
+
 </details>
 
-Render this component from `src/App.tsx` so it shows the question and the answer. You can use a name like "Me" for the question, and "GPT (or "AI") for the answer:
+Submit the form and have a look at the _"Network tab"_ in the browser, make sure you see a request to the endpoint `/message` that includes your question and resolves to an answer.
+
+Once you confirmed it renders, we want to display the question and the answer on the screen. You already created a new component called `Message` in `src/components/Message.jsx`, we'll use this component to render the question and the answer:
 
 <details open>
     <summary>src/App.tsx</summary>
 
 ```ts
-import { useState } from "react";
-import { generateAnswer } from "./utils/langchain";
-// 1. import `Message` component
+// ...
 
 export default function App() {
     // ...
@@ -319,7 +269,7 @@ export default function App() {
 
         <div className="h-full ">
               <div className="h-full flex flex-col items-center text-sm dark:bg-gray-800">
-                  // 2. Render the Message component for the question and answer
+                  // 2. Using the `messages` state variable, render the Message component for the question and answer
               </div>
           </div>
 
