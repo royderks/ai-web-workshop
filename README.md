@@ -267,7 +267,7 @@ export default function App() {
     return (
         // ...
 
-        <div className="h-full ">
+        <div className="h-4/5 overflow-auto">
               <div className="h-full flex flex-col items-center text-sm dark:bg-gray-800">
                   // 2. Using the `messages` state variable, render the Message component for the question and answer
               </div>
@@ -284,12 +284,12 @@ When you complete this excercise you should be able to type a question, submit t
 
 ### Excercise 4
 
-The response from OpenAI might take some time to be delivered. That's why adding a loading indicator is a nice touch. You can use the following code block to create a new file called `src/components/Loader/Loader.tsx`:
+The response from the LLM might take some time to be delivered. That's why adding a loading indicator is a nice touch. You can use the following code block to create a new file called `src/components/Loader.jsx`:
 
 <details open>
-    <summary>src/components/Loader/Loader.tsx</summary>
+    <summary>src/components/Loader.jsx</summary>
 
-```ts
+```js
 export default function Loader() {
     return (
         <div role="status">
@@ -305,11 +305,11 @@ export default function Loader() {
 
 </details>
 
-You can use this component in `src/App.tsx` to show a loading indicator when you're waiting for the request to OpenAI to resolve.
+You can use this component in `src/App.jsx` to show a loading indicator when you're waiting for the request to the LLM to resolve.
 
 BONUS: Also add an error state.
 
-The application will now have both a way to ask questions and shows a loading state when the answer is being fetched from OpenAI.
+The application will now have both a way to ask questions and shows a loading state when the answer is being fetched from the LLM.
 
 ### Excercise 5
 

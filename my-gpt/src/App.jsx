@@ -1,13 +1,18 @@
 import { useState } from "react";
 import Message from "./components/Message";
+import Loader from "./components/Loader";
 
 export default function App() {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
   async function handleSubmitQuestion(input) {
-    // 1. Call `generateAnswer` 
     try {
+      setIsLoading(true)
+      setError('') // reset error
+
       const response = await fetch("/message", {
         method: "POST",
         body: JSON.stringify({ question: input }),
@@ -17,16 +22,24 @@ export default function App() {
       }).then(res => res.json())
 
       if (response) {
-        // 2. Store the answer in state in below format
         setMessages([
           ...messages,
           { role: "user", content: question },
           { role: "assistant", content: response?.answer }
         ])
+
       }
     } catch (e) {
       console.error(e)
+      setError('Something went wrong')
+    } finally {
+      setIsLoading(false)
     }
+  }
+
+  if (error) {
+    alert(error)
+    setError('')
   }
 
   return (
@@ -37,12 +50,15 @@ export default function App() {
             <h1 className="text-2xl sm:text-4xl font-semibold text-center text-gray-200 dark:text-gray-600 flex gap-4 p-4 items-center justify-center">
               My GPT
             </h1>
-            <div className="h-full ">
+            <div className="h-4/5 overflow-auto">
               <div className="h-full flex flex-col items-center text-sm dark:bg-gray-800">
                 {
                   messages?.length > 0 && messages.map(({ role, content }) => (
                     <Message role={role} content={content} />
                   ))
+                }
+                {
+                  isLoading && <Loader />
                 }
               </div>
             </div>
