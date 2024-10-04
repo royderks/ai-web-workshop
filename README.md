@@ -313,7 +313,7 @@ The application will now have both a way to ask questions and shows a loading st
 
 ### Excercise 5
 
-The way you ask your question makes a huge difference in the response you're getting, maybe you've wondered why our answer is short and snappy rather than a blurb of text. [Prompt engineering](https://platform.openai.com/docs/guides/prompt-engineering) is a common way to change the format or style of the answer.
+The way you ask your question makes a huge difference in the response you're getting, maybe you've wondered why our answer is short and snappy rather than a blurb of text. [Prompt engineering](https://www.promptingguide.ai/) is a common way to change the format or style of the answer.
 
 By giving the LLM a prompt template together with your question, you can control the format or sentiment of the answer. You don't always want to expose the prompt to the user of the application too.
 
@@ -323,34 +323,78 @@ Imagine we're building a GPT for a travel office, let's add the following prompt
 Take the role of a personal travel assistant, and answer the following question in detail: {question}
 ```
 
-We're going to test this prompt template in the [OpenAI Playground](https://platform.openai.com/playground) first.
+Have a look at the [LangChainJS docs](https://js.langchain.com/docs/concepts/#string-prompttemplates) to see how to implement a standard prompt template for the `generateAnswer` function in `src/utils/langchain.js`.
 
-Have a look at the [LangChainJS docs](https://js.langchain.com/docs/modules/model_io/prompts/quick_start) to see how to implement a prompt template for the `generateAnswer` function in `src/utils/langchain.ts`.
+First, we'll implement a prompt template with a variable substitution. For this you should import the following method:
 
-Try out the impact of the prompt template on the answer from the LLM. Make sure to update the test case in `src/utils/langchain.test.ts` too.
+```js
+import { PromptTemplate } from "@langchain/core/prompts";
+```
 
-Hint: How can you overwrite the prompt instruction in the test case too without mocking?
-
-### Excercise 6
-
-The way you prompt the LLM isn't the only way to change the answer of the LLM, another thing we can do is changing the `temperature` or by using a different model.
-
-You can modify these values in `src/utils/langchain.ts`:
+Then add your prompt template:
 
 <details open>
-    <summary>src/utils/langchain.ts</summary>
+    <summary>src/utils/langchain.js</summary>
   
-```ts
-const llm = new OpenAI({
-    openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
-    temperature: 0.9, // Can be between 0 and 1
-    modelName: "gpt-4-0125-preview", // Default. Other options: https://platform.openai.com/docs/models/
-    maxTokens: 300 // length of response, tokens !== characters
-});
+```js
+export async function generateAnswer(question) {
+    // const model = ...
+
+    const promptTemplate = PromptTemplate.fromTemplate(
+        "Take the role of a personal travel assistant, and answer the following question in detail: {question}"
+    );
+
+    const formattedPrompt = await promptTemplate.invoke({ question });
+
+    let answer = ''
+    try {
+        answer = await model.invoke(formattedPrompt);
+    } catch (e) {
+        return 'Something went wrong'
+    }
+}
 ```
 </details>
 
-Play around with different values, both in your code and the OpenAI playground. How does this impact the quality or style of the answer?
+Try out the impact of the prompt template on the answer from the LLM. Make sure to update the test case in `src/utils/langchain.test.js` too.
+
+Hint: How can you overwrite the prompt instruction in the test case too without mocking?
+
+Hint: The way you prompt the LLM isn't the only way to change the answer of the LLM, another thing we can do is changing the model parameters or by using a different model.
+
+You can modify these values in `src/utils/langchain.js`:
+
+<details open>
+    <summary>src/utils/langchain.js</summary>
+  
+```js
+export async function generateAnswer(question) {
+    const model = new OpenAI({
+        openAIApiKey: import.meta.env.VITE_OPENAI_APIKEY,
+        model: "gpt-3.5-turbo-instruct", // For other models https://platform.openai.com/docs/models
+        temperature: 0.7,
+        maxTokens: 1000,
+        maxRetries: 5,
+        // see https://v03.api.js.langchain.com/classes/_langchain_openai.OpenAI.html for all model parameters
+    });
+
+    // Or for watsonx
+    const model = new WatsonxAI({
+        modelId: "ibm/granite-13b-instruct-v2", // For other models https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-api-model-ids.html?context=wx&audience=wdp
+        ibmCloudApiKey: import.meta.env.VITE_WATSONX_APIKEY,
+        projectId: import.meta.env.VITE_WATSONX_PROJECT_ID,
+        modelParameters: {
+            max_new_tokens: 100,
+            min_new_tokens: 0,
+            stop_sequences: [],
+            repetition_penalty: 1,
+        },
+    });
+}
+```
+</details>
+
+Play around with different values, either from the application or by writing different test cases. How does this impact the quality or style of the answer?
 
 ### Excercise 7
 
