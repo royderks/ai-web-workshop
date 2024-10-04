@@ -396,132 +396,63 @@ export async function generateAnswer(question) {
 
 Play around with different values, either from the application or by writing different test cases. How does this impact the quality or style of the answer?
 
-### Excercise 7
+### Excercise 6
 
-The above is an example of a "zero shot" prompt. We didn't provide the LLM with any context besides what role to take. Therefore we assumed the LLM knows what a travel agent is, but sometimes the model has no information on your question or needs additional context.
-
-Before implementing a new type of prompting, we'll need to implement a chat model:
-
-<details>
-    <summary>src/utils/langchain.ts</summary>
-
-    ```ts
-    import { ChatOpenAI } from "@langchain/openai";
-    import { ChatPromptTemplate } from "@langchain/core/prompts";
-
-    const llm = new ChatOpenAI({
-        openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
-        temperature: 1,
-        modelName: "gpt-4-0125-preview",
-    });
-
-    export async function generateAnswer(
-        question: string,
-        promptTemplate: string = "Take the role of a {role}, that answers questions in a {style} way.",
-        role: string = "Personal travel assistant",
-        style: string = "consistent" // What happens if you change this to detailed?
-    ) {
-        let answer = ''
-
-        const chatPrompt = ChatPromptTemplate.fromMessages([
-            ["system", promptTemplate],
-            ["human", "{question}"],
-        ]);
-
-        const formattedPrompt = await chatPrompt.formatMessages({
-            role,
-            style,
-            question
-        });
-
-        try {
-            const result = await llm.invoke(formattedPrompt);
-            answer = result?.content as string;
-        } catch (e) {
-            return 'Something went wrong';
-        }
-
-        return answer;
-    }
-
-    ```
-
-</details>
-
-In the above setup we made it easier to change the input variables, and by using a Chat model instead of LLM model we can start implementing different prompting techniques. You might see there's a `human` and `system` template, as in the Chat model subsequent messages are being used as context.
-
-Fix your test so it will continue to run.
-
-### Excercise 8
-
-We can also try "few shot prompting" where we give the LLM some examples before asking our question, try [this example in the OpenAI playground](https://platform.openai.com/playground/p/WqBsOKw0bvEae65ajSQPLRfv?model=gpt-3.5-turbo&mode=chat).
+The above is an example of a "zero shot" prompt. We can also try "few shot prompting" where we give the LLM some examples before asking our question.
 
 Let's start by adding a few shot prompting technique:
 
 <details>
-    <summary>src/utils/langchain.ts</summary>
+    <summary>src/utils/langchain.js</summary>
 
-```ts
+```js
 import { ChatOpenAI } from "@langchain/openai";
+// 1. Import method
 import { ChatPromptTemplate, FewShotChatMessagePromptTemplate } from "@langchain/core/prompts";
 
-const llm = new ChatOpenAI({
-    openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
-    temperature: 1,
-    modelName: "gpt-4-0125-preview",
-});
+export async function generateAnswer(question) {
+    // const model = ...
 
-export async function generateAnswer(
-    question: string,
-    promptTemplate: string = "Take the role of a Personal travel assistant, that answers questions in a consistent way."
-) {
-    let answer = '';
+    // 2. Set prompt for the examples
+        const examplePrompt = PromptTemplate.fromTemplate(
+        "Question: {question}\n\nAnswer: {answer}"
+    );
 
+    // 3. Provide examples that will be mapped to the examplePrompt above
     const examples = [
         {
-            input: "What are the best restaurants in Amsterdam?",
-            output: "The highest rated restaurants in Amsterdam are (1), (2), (3)",
+            question: "What are the best museums in Amsterdam?",
+            answer: "The highest rated museums in Amsterdam are: Rijksmuseum, Van Gogh Museum, Anne Frank Huis",
         },
         {
-            input: "What is the best time of the year to visit The Netherlands?",
-            output: "Summer",
+            question: "What is the best time of the year to visit The Netherlands?",
+            answer: "The best time of the year to visit The Netherlands is: summer",
+        },
+        {
+            question: "How would you recommend to travel in The Netherlands?",
+            answer: "The recommended means of transportation in The Netherlands are: bike, boat, train",
         },
     ];
 
-    const examplePrompt = ChatPromptTemplate.fromTemplate(`User: {input}
-Assistant: {output}`);
-
-    const fewShotPrompt = new FewShotChatMessagePromptTemplate({
-        prefix: promptTemplate,
-        suffix: "User: {input} Assistant:",
-        examplePrompt,
+    // 4. Create few shot prompt template from examples
+    const prompt = new FewShotPromptTemplate({
         examples,
-        inputVariables: ["input"],
+        examplePrompt,
+        suffix: "Question: {question}\n\n",
+        inputVariables: ["question"],
     });
 
-    const formattedPrompt = await fewShotPrompt.format({
-        input: question,
+    // 5. Substitute `question` in the suffx
+    const formattedPrompt = await prompt.format({
+        question
     });
 
-    try {
-        const result = await llm.invoke(formattedPrompt);
-        answer = result?.content as string;
-    } catch (e) {
-        console.log(e);
-        return 'Something went wrong';
-    }
-
-    return answer;
-}
+    // ...
 ```
 
 </details>
 
-Ask a question like "What are the best museums in amsterdam?" and the response should match the format of the examples. Try for yourself, see the difference when you change the provided examples.
-
-BONUS: Edit the application to allow follow-up questions by [passing the chat history](https://js.langchain.com/docs/modules/memory/how_to/summary#usage-with-an-llm).
-
-BONUS: You can also implement few shot prompting without using chat, for this you can use [prompt pipelines](https://js.langchain.com/docs/modules/model_io/prompts/pipeline).
+Ask a question like "What are the best restaurants in amsterdam?" and the response should match the format of the examples. Try for yourself, see the difference when you change the provided examples.
 
 ### Excercise 9
 

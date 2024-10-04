@@ -1,6 +1,9 @@
 import { OpenAI } from "@langchain/openai";
 import { WatsonxAI } from "@langchain/community/llms/watsonx_ai";
-import { PromptTemplate } from "@langchain/core/prompts";
+import {
+    PromptTemplate,
+    FewShotPromptTemplate
+} from "@langchain/core/prompts";
 
 export async function generateAnswer(question) {
     const model = new WatsonxAI({
@@ -17,11 +20,35 @@ export async function generateAnswer(question) {
     //     temperature: 0 // lower temperature = less deterministic
     // });
 
-    const promptTemplate = PromptTemplate.fromTemplate(
-        "Take the role of a personal travel assistant, and answer the following question in detail: {question}"
+    const examplePrompt = PromptTemplate.fromTemplate(
+        "Question: {question}\n\nAnswer: {answer}"
     );
 
-    const formattedPrompt = await promptTemplate.invoke({ question });
+    const examples = [
+        {
+            question: "What are the best museums in Amsterdam?",
+            answer: "The highest rated museums in Amsterdam are: Rijksmuseum, Van Gogh Museum, Anne Frank Huis",
+        },
+        {
+            question: "What is the best time of the year to visit The Netherlands?",
+            answer: "The best time of the year to visit The Netherlands is: summer",
+        },
+        {
+            question: "How would you recommend to travel in The Netherlands?",
+            answer: "The recommended means of transportation in The Netherlands are: bike, boat, train",
+        },
+    ];
+
+    const prompt = new FewShotPromptTemplate({
+        examples,
+        examplePrompt,
+        suffix: "Question: {question}\n\n",
+        inputVariables: ["question"],
+    });
+
+    const formattedPrompt = await prompt.format({
+        question
+    });
 
     let answer = ''
     try {
