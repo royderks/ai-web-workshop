@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Message from "./components/Message";
 import Loader from "./components/Loader";
 

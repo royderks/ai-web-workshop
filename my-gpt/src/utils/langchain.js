@@ -1,47 +1,76 @@
-import { ChatOpenAI } from "@langchain/openai";
+import { OpenAI } from "@langchain/openai";
 import { WatsonxAI } from "@langchain/community/llms/watsonx_ai";
-import {
-    PromptTemplate,
-    FewShotPromptTemplate
-} from "@langchain/core/prompts";
-import z from 'zod'
+import { PromptTemplate } from "@langchain/core/prompts";
 
-export async function generateAnswer(question) {
-    // const model = new WatsonxAI({
-    //     modelId: "ibm/granite-13b-instruct-v2",
-    //     ibmCloudApiKey: process.env.VITE_WATSONX_APIKEY,
-    //     projectId: process.env.VITE_WATSONX_PROJECT_ID,
-    //     modelParameters: {
-    //         temperature: 0
-    //     },
-    // });
+import "@tensorflow/tfjs-node-gpu";
+import { TensorFlowEmbeddings } from "@langchain/community/embeddings/tensorflow";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import fs from 'fs'
 
-    const model = new ChatOpenAI({
-        openAIApiKey: process.env.VITE_OPENAI_APIKEY,
-        model: "gpt-4",
-        temperature: 0 // lower temperature = less deterministic
+
+export async function generateAndStoreEmbeddings() {
+    let vectorStore = ''
+
+    const file = fs.readFileSync(process.cwd() + '/src/public/data.txt', 'binary');
+
+    const textSplitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 200,
+        chunkOverlap: 100,
     });
 
-    const recommendations = z.object({
-        title: z.string().describe("Name of the recommendation"),
-        description: z.string().describe("Description in maximum 2 sentences"),
-        age: z.number().optional().describe("Minimal age for the recommendation"),
-    });
+    const docs = await textSplitter.createDocuments([file]);
 
-    const prompt = PromptTemplate.fromTemplate(
-        "Be a helpful assistant and give a recommendation for the following activity: {question}"
+    vectorStore = await MemoryVectorStore.fromDocuments(
+        docs,
+        new TensorFlowEmbeddings()
     );
 
-    const formattedPrompt = await prompt.format({
-        question
+    return vectorStore
+}
+
+export async function generateAnswer(question) {
+    const model = new WatsonxAI({
+        modelId: "ibm/granite-13b-instruct-v2",
+        ibmCloudApiKey: process.env.VITE_WATSONX_APIKEY,
+        projectId: process.env.VITE_WATSONX_PROJECT_ID,
     });
+
+    // const model = new OpenAI({
+    //     openAIApiKey: process.env.VITE_OPENAI_APIKEY,
+    //     model: "gpt-3.5-turbo-instruct",
+    // });
+
+    const vectorStore = await generateAndStoreEmbeddings()
+
+    const prompt = PromptTemplate.fromTemplate(` Use the following pieces of context to answer the question at the end.
+If you can't find the answer in the provided context, just say that you cannot answer the question based on the provided context, 
+don't answer based on your training data or hallucinate.
+
+{context}
+
+Question: {question}
+
+Helpful Answer:`);
 
     let answer = ''
     try {
-        const structuredLlm = model.withStructuredOutput(recommendations);
-        const structuredAnswer = await structuredLlm.invoke(formattedPrompt);
+        const customRagChain = await createStuffDocumentsChain({
+            llm: model,
+            prompt,
+            outputParser: new StringOutputParser(),
+        });
 
-        answer = JSON.stringify(structuredAnswer)
+        const retriever = vectorStore.asRetriever();
+        const context = await retriever.invoke(question);
+
+        answer = await customRagChain.invoke({
+            question,
+            context,
+        });
+
     } catch (e) {
         console.log({ e })
         return 'Something went wrong'

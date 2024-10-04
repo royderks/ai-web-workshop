@@ -20,6 +20,9 @@ You need to have an API Key for either OpenAI or IBM watsonx.ai. To get your API
     - To get your API Key, open the hamburger menu in the top-left and select "Access (IAM)". This will open the IBM Cloud Console, in the menu you have to select ["API Keys"](https://cloud.ibm.com/iam/apikeys) and create a new API Key.
     - Store both the project ID and API Key somewhere safe as you need it later.
 
+Alternatively, you can download [Ollama](https://ollama.com/download) and run a LLM locally on your machine. Depending on the specs of your machine it can be slow or too heavy to install. After downloading Ollama, make sure to use the CLI command (`ollama run llama3.1`) to download the model (+/- 5GB) to your machine
+
+
 ## Installation
 
 The application we'll be building today is using [Vite](https://vitejs.dev/), a build tool for modern JavaScript (and TypeScript) applications.
@@ -521,37 +524,48 @@ In the directory `src/public` you can find a file called `data.txt` that contain
 
 We don't want to pass the entire file to the LLM, as this can lead to overload when you have a lot of data. Instead, we need to take the most important parts of our data for whihch we would need a vector database.
 
-We'll use a local in-memory vectorstore as this is a demo environment, by making these changes in `src/utils/langchain.ts`:
+We'll use a local in-memory vectorstore and local embeddings as this is a demo environment:
+
+First, install the following libraries:
+
+```
+npm install @langchain/community @langchain/core @tensorflow/tfjs
+npm install @tensorflow/tfjs-node-gpu @tensorflow-models/universal-sentence-encoder --legacy-peer-deps
+```
+
+Then continue by making these changes in `src/utils/langchain.js`:
 
 <details open>
-    <summary>src/utils/langchain.ts</summary>
+    <summary>src/utils/langchain.js</summary>
 
-```ts
+```js
 // ...
-import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
-import { ChatPromptTemplate, FewShotChatMessagePromptTemplate } from "@langchain/core/prompts";
+import "@tensorflow/tfjs-node-gpu";
+import { TensorFlowEmbeddings } from "@langchain/community/embeddings/tensorflow";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
-
-// ...
-
-let vectorStore: MemoryVectorStore;
+import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import fs from 'fs'
 
 export async function generateAndStoreEmbeddings() {
-    const trainingText = await fetch("/data.txt")
-        .then((response) => response.text())
-        .then((text) => text);
+    let vectorStore = ''
+
+    const file = fs.readFileSync(process.cwd() + '/src/public/data.txt', 'binary');
 
     const textSplitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 1000,
+        chunkSize: 200,
+        chunkOverlap: 100,
     });
 
-    const docs = await textSplitter.createDocuments([trainingText]);
+    const docs = await textSplitter.createDocuments([file]);
 
     vectorStore = await MemoryVectorStore.fromDocuments(
         docs,
-        new OpenAIEmbeddings({ openAIApiKey: import.meta.env.VITE_OPENAI_KEY }),
+        new TensorFlowEmbeddings()
     );
+
+    return vectorStore
 }
 
 // Everything else ...
@@ -559,86 +573,63 @@ export async function generateAndStoreEmbeddings() {
 
 </details>
 
-In `src/App.tsx` we need to load this data on the first render:
+The next step is to use the new function in the `generateAnswer` function to use the data stored in the vectorstore:
 
 <details open>
-    <summary>src/App.tsx</summary>
+    <summary>src/utils/langchain.js</summary>
 
-```ts
-// src/App.tsx
-import { useEffect, useState } from "react";
-import { generateAnswer, generateAndStoreEmbeddings } from "./utils/langchain";
-import Message from "./components/Message/Message";
-import Loader from "./components/Loader/Loader";
-
-export default function App() {
-    const [question, setQuestion] = useState("");
-    const [result, setResult] = useState({ question: "", answer: "" });
-    const [loading, setLoading] = useState(false);
-
-    // 1. Load data into vector store
-
-    // Everything else ...
-
-}
-```
-
-</details>
-
-The next step is to create a new function for the `generateAnswer` function to use the data stored in the vectorstore:
-
-<details open>
-    <summary>src/utils/langchain.ts</summary>
-
-```ts
-// ...
-import { createRetrievalChain } from "langchain/chains/retrieval";
-import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
-
+```js
 // ...
 
-export async function generateAnswerRAG(question: string) {
-    let answer = '';
+export async function generateAnswer(question) {
+    const model = new WatsonxAI({
+        modelId: "ibm/granite-13b-instruct-v2",
+        ibmCloudApiKey: process.env.VITE_WATSONX_APIKEY,
+        projectId: process.env.VITE_WATSONX_PROJECT_ID,
+    });
 
-    const prompt = ChatPromptTemplate.fromTemplate(`
-Answer the following question based only on the provided context:
+    // const model = new OpenAI({
+    //     openAIApiKey: process.env.VITE_OPENAI_APIKEY,
+    //     model: "gpt-3.5-turbo-instruct",
+    // });
 
-<context>
+    const vectorStore = await generateAndStoreEmbeddings()
+
+    const prompt = PromptTemplate.fromTemplate(` Use the following pieces of context to answer the question at the end.
+If you can't find the answer in the provided context, just say that you cannot answer the question based on the provided context, 
+don't answer based on your training data or hallucinate.
+
 {context}
-</context>
 
-Question: {input}`
-    );
+Question: {question}
 
-    const documentChain = await createStuffDocumentsChain({
-        llm,
-        prompt,
-    });
+Helpful Answer:`);
 
-    const retriever = vectorStore.asRetriever();
-
-    const retrievalChain = await createRetrievalChain({
-        combineDocsChain: documentChain,
-        retriever,
-    });
-
+    let answer = ''
     try {
-        const result = await retrievalChain.invoke({
-            input: question,
+        const customRagChain = await createStuffDocumentsChain({
+            llm: model,
+            prompt,
+            outputParser: new StringOutputParser(),
         });
-        answer = result?.answer;
-    } catch (e) {
-        console.log(e);
-        return 'Something went wrong';
-    }
 
-    return answer;
+        const retriever = vectorStore.asRetriever();
+        const context = await retriever.invoke(question);
+
+        answer = await customRagChain.invoke({
+            question,
+            context,
+        });
+
+    } catch (e) {
+        console.log({ e })
+        return 'Something went wrong'
+    }
+    return answer
 }
 ```
 
 </details>
-
-And finally, use this new function in `src/App.tsx`.
 
 If you ask a question now, it will inject the data from the document. Try this out with multiple (follow-up) questions.
 
