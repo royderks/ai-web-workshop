@@ -454,7 +454,66 @@ export async function generateAnswer(question) {
 
 Ask a question like "What are the best restaurants in amsterdam?" and the response should match the format of the examples. Try for yourself, see the difference when you change the provided examples.
 
-### Excercise 9
+### Excercise 7
+
+Optional: only works with OpenAI at the moment
+
+Structured outputs can be used to force the LLM to return for example JSON. To enable this you need to use a supported chat model, such as `gpt-4`. To get started, we first need to install `zod`:
+
+```bash
+npm i zod
+```
+
+After installing you can add the following code to `src/utils/langchain.js`:
+
+<details>
+    <summary>src/utils/langchain.js</summary>
+
+```js
+// 1. Import chat model & zod
+import { ChatOpenAI } from "@langchain/openai";
+import z from 'zod'
+
+export async function generateAnswer(question) {
+    // 2. Initiate method for chat
+    const model = new ChatOpenAI({
+        openAIApiKey: process.env.VITE_OPENAI_APIKEY,
+        model: "gpt-4",
+    });
+
+    // 3. Define output structure
+    const recommendations = z.object({
+        title: z.string().describe("Name of the recommendation"),
+        description: z.string().describe("Description in maximum 2 sentences"),
+        age: z.number().optional().describe("Minimal age for the recommendation"),
+    });
+
+    // 4. Create prompt and format it with variable
+    const prompt = PromptTemplate.fromTemplate(
+        "Be a helpful assistant and give a recommendation for the following activity: {question}"
+    );
+    const formattedPrompt = await prompt.format({
+        question
+    });
+
+    let answer = ''
+    try {
+        // 5. Enable structured ouput
+        const structuredLlm = model.withStructuredOutput(recommendations);
+        const structuredAnswer = await structuredLlm.invoke(formattedPrompt);
+
+        answer = JSON.stringify(structuredAnswer)
+    } catch (e) {
+
+    // ...
+
+```
+
+</details>
+
+Update the structure for your use case. Can you style the response message so it would become better at displaying the structured output?
+
+### Excercise 8
 
 Next to few-shot prompts or adding the chat history as context, you can also load data from external sources and pass it to the LLM.
 
