@@ -10,6 +10,7 @@ import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import fs from 'fs'
 
+import { WikipediaQueryRun } from "@langchain/community/tools/wikipedia_query_run";
 
 export async function generateAndStoreEmbeddings() {
     let vectorStore = ''
@@ -31,6 +32,15 @@ export async function generateAndStoreEmbeddings() {
     return vectorStore
 }
 
+export async function callWikipediaTool(question) {
+    const tool = new WikipediaQueryRun({
+        topKResults: 3,
+        maxDocContentLength: 4000,
+    });
+
+    return await tool.invoke(question);
+}
+
 export async function generateAnswer(question) {
     const model = new WatsonxAI({
         modelId: "ibm/granite-13b-instruct-v2",
@@ -42,8 +52,6 @@ export async function generateAnswer(question) {
     //     openAIApiKey: process.env.VITE_OPENAI_APIKEY,
     //     model: "gpt-3.5-turbo-instruct",
     // });
-
-    const vectorStore = await generateAndStoreEmbeddings()
 
     const prompt = PromptTemplate.fromTemplate(` Use the following pieces of context to answer the question at the end.
 If you can't find the answer in the provided context, just say that you cannot answer the question based on the provided context, 
@@ -57,19 +65,13 @@ Helpful Answer:`);
 
     let answer = ''
     try {
-        const customRagChain = await createStuffDocumentsChain({
-            llm: model,
-            prompt,
-            outputParser: new StringOutputParser(),
-        });
-
-        const retriever = vectorStore.asRetriever();
-        const context = await retriever.invoke(question);
-
-        answer = await customRagChain.invoke({
-            question,
+        const context = await callWikipediaTool(question);
+        const formattedPrompt = await prompt.format({
             context,
+            question
         });
+
+        answer = await model.invoke(formattedPrompt);
 
     } catch (e) {
         console.log({ e })
