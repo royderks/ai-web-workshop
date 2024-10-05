@@ -6,8 +6,8 @@
 
 You need to have an API Key for either OpenAI or IBM watsonx.ai. To get your API Key:
 
-- **OpenAI API**: You can sign up for a [free trial](https://platform.openai.com/), press "Login" in top-right and follow the instructions ($5 credit).
-- **IBM watsonx**: You can sign up for a [free trial](https://www.ibm.com/products/watsonx-ai), press "Start your free trial" and follow the instructions to create an IBM ID & IBM Cloud account (25,000 free tokens).
+- **OpenAI API**: You can sign up for a [free trial](https://platform.openai.com/) ($5 credit), press "Login" in top-right and follow the instructions.
+- **IBM watsonx**: You can sign up for a [free trial](https://www.ibm.com/products/watsonx-ai) (25,000 free tokens), press "Start your free trial" and follow the instructions to create an IBM ID & IBM Cloud account. Use the region Dallas (`us-south`) when prompted.
 
 ## Get your credentials
 
@@ -19,6 +19,9 @@ You need to have an API Key for either OpenAI or IBM watsonx.ai. To get your API
     - Once the sandbox has loaded, open it and click the "Manage" tab. Copy the project ID from the "Details" section of the "General" page. 
     - To get your API Key, open the hamburger menu in the top-left and select "Access (IAM)". This will open the IBM Cloud Console, in the menu you have to select ["API Keys"](https://cloud.ibm.com/iam/apikeys) and create a new API Key.
     - Store both the project ID and API Key somewhere safe as you need it later.
+
+Alternatively, you can download [Ollama](https://ollama.com/download) and run a LLM locally on your machine. Depending on the specs of your machine it can be slow or too heavy to install. After downloading Ollama, make sure to use the CLI command (`ollama run llama3.1`) to download the model (+/- 5GB) to your machine
+
 
 ## Installation
 
@@ -44,45 +47,74 @@ You're now ready to start with the excercises.
 
 ### Excercise 1
 
-To interface with the LLMs from OpenAI, we need to install a library called LangChain:
+To interface with the LLMs, we need to install a library called LangChain:
 
 ```bash
 npm install langchain @langchain/openai
+
+# Or for watsonx
+npm install langchain @langchain/community
 ```
 
 After the installation is complete, you should add a new file called `.env` in the root of your Vite application and add the following environment variable:
 
-```txt
-VITE_OPENAI_KEY=sk-********
+```bash
+VITE_OPENAI_APIKEY=sk-********
+
+# Or for watsonx
+VITE_WATSONX_PROJECT_ID=
+VITE_WATSONX_APIKEY=
 ```
 
-Next, we'll create a new file called `src/utils/langchain.ts` and add the following code:
+Next, we'll create a new file called `src/utils/langchain.js` and add the following code:
 
 <details open>
-    <summary>src/utils/langchain.ts</summary>
+    <summary>src/utils/langchain.js</summary>
   
-    ```ts
-    import { OpenAI } from "@langchain/openai";
-    const llm = new OpenAI({
-      openAIApiKey: import.meta.env.VITE_OPENAI_KEY
-      });
-    ```
+```js
+import { OpenAI } from "@langchain/openai";
+// Or for watsonx
+import { WatsonxAI } from "@langchain/community/llms/watsonx_ai";
+
+export async function generateAnswer(question) {
+    const model = new OpenAI({
+        openAIApiKey: import.meta.env.VITE_OPENAI_APIKEY,
+        model: "gpt-3.5-turbo-instruct", 
+        temperature: 0 // lower temperature = less deterministic
+    });
+
+    // Or for watsonx
+    const model = new WatsonxAI({
+        modelId: "ibm/granite-13b-instruct-v2",
+        ibmCloudApiKey: import.meta.env.VITE_WATSONX_APIKEY,
+        projectId: import.meta.env.VITE_WATSONX_PROJECT_ID,
+        modelParameters: {
+            temperature: 0
+        },
+    });
+}
+```
 
 </details>
 
-This will initialize a connection to OpenAI using LangChain and let us access the models.
+This will initialize a connection to the LLM Provider using LangChain and let us access the models. See here for all the supported models and their IDs:
+
+- [OpenAI](https://platform.openai.com/docs/models)
+- [IBM watsonx](https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-api-model-ids.html?context=wx&audience=wdp)
 
 We'll create our first function that can be used to generate an answer for a question, add the following to the bottom of the file:
 
 <details open>
-    <summary>src/utils/langchain.ts</summary>
+    <summary>src/utils/langchain.js</summary>
 
-```ts
-export async function generateAnswer(question: string) {
+```js
+export async function generateAnswer(question) {
+    // const model = ...
+
     let answer = '';
 
     try {
-        answer = await llm.invoke(question);
+        answer = await model.invoke(question);
     } catch (e) {
         return 'Something went wrong';
     }
@@ -93,59 +125,138 @@ export async function generateAnswer(question: string) {
 
 </details>
 
-To test if what we've done is working, create new file called `src/utils/langchain.test.ts` and write a test for the function `generateAnswer`.
+To test if what we've done is working, create new file called `src/utils/langchain.test.js` and write a test for the function `generateAnswer`.
 
 Take the following code and modify it so the test will succeed:
 
 <details open>
-    <summary>src/utils/langchain.test.ts</summary>
+    <summary>src/utils/langchain.test.js</summary>
 
-```ts
+```js
 import { describe, it, assert } from 'vitest';
 import { generateAnswer } from './langchain';
 
 describe('LangChain', () => {
     it('Answers a question', async () => {
         // 1. Add your own question here
-        const answer = await generateAnswer('YOUR QUESTION');
+        const answer = await generateAnswer('Is the United Kingdom a country, answer "yes" or "no" only.');
+
+        console.log({ answer })
 
         // 2. Match the answer from the LLM to a predicted value
-        assert.equal(answer.trim(), "THE ANSWER");
+        assert.equal(answer.trim().toLowerCase(), "yes");
     });
 });
 ```
 
 </details>
 
-Run `npm run test` to run the above test. Make sure your test is succeeding.
+Run `npm run test` to run the above test. You can change the question and the answer to test a different reponse.
 
 Hint: Be explicit of what you expect the LLM to return.
 
 ### Excercise 2
 
-We want to be able to use the messagebox in the application to send the question to the LLM and show the answer in the screen.
-
-From our `App` component in `src/App.tsx`, we need to call the `generateAnswer` function we created in the previous excercise. First, let's create some state variables and import the function:
+To avoid leaking the credentials to the user, we need to set up a server-side request. The application has already been set up to support this. In the file `server.js` add the following:
 
 <details open>
-    <summary>src/App.tsx</summary>
+    <summary>server.js</summary>
 
-```ts
-import { useState } from "react";
-import { generateAnswer } from "./utils/langchain";
+```js
+const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
-export default function App() {
-    const [question, setQuestion] = useState("");
-    const [result, setResult] = useState({ question: "", answer: "" });
+// Add this part
+app.post("/message", async (req, res, next) => {
+  try {
+    const { question } = req?.body
+    const answer = await generateAnswer(question)
 
-    // Everything else ...
-
-}
+    res.json({ answer })
+  } catch (e) { 
+    next(e) 
+  }
+});
 ```
 
 </details>
 
-To call the `generateAnswer` function and add the question and answer to the state, you'll need to create a handler function. Add the following code to `src/App.tsx` and modify it so the state variable `result` contains both the question and answer.
+Start the application by running `npm run dev` in the terminal. The application will start, and is availabe at `http://localhost:3000` and `http://localhost:3000/message` for the API.
+
+Can you send a request `http://localhost:3000/message` using cURL, Postman or any other tool you use for testing API requests? 
+
+Hint: The API has the method `POST` and expects JSON with a body containing the field `question`.
+
+<details>
+    <summary>cURL solution</summary>
+
+```bash
+curl -XPOST -H "Content-type: application/json" -d '{ "question": "What is the capital of the UK" }' 'http://localhost:3000/message'
+```
+
+</details>
+
+### Excercise 3
+
+We want to be able to use the messagebox in the application to send the question to the LLM and show the answer in the screen.
+
+First, create a new component called `src/components/Message.jsx` that we'll use to display the messages:
+
+<details open>
+    <summary>src/components/Message.jsx</summary>
+
+```js
+export default function Message({ role, content }) {
+
+    return (
+        <div className="flex items-start gap-2.5 mx-8 mb-4">
+            <div className="z-10 w-8 h-8 rounded-full bg-red-300">
+                <span className="w-8 h-8 flex justify-center items-center">{role}</span>
+            </div>
+            <div className="flex flex-col w-full leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
+                <p className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">{content}</p>
+            </div>
+        </div>
+    );
+}
+```
+
+From our `App` component in `src/App.js`, we can import this component and make the existing function `handleSubmitQuestion` work with the API we created in excercise 2:
+
+<details open>
+    <summary>src/App.js</summary>
+
+```js
+import { useState } from "react";
+import Message from "./components/Message";
+
+export default function App() {
+  const [question, setQuestion] = useState('');
+  const [messages, setMessages] = useState([])
+
+  async function handleSubmitQuestion(input) {
+    try {
+        // 1. Call `/message` 
+        // 2. Store the answer in state in below format
+        // setMessages([
+        //   { role: "user", content: "question" },
+        //   { role: "assistant", content: "answer" }
+        // ])
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  // ...
+```
+
+</details>
+
+Submit the form and have a look at the _"Network tab"_ in the browser, make sure you see a request to the endpoint `/message` that includes your question and resolves to an answer.
+
+Once you confirmed it renders, we want to display the question and the answer on the screen. You already created a new component called `Message` in `src/components/Message.jsx`, we'll use this component to render the question and the answer:
 
 <details open>
     <summary>src/App.tsx</summary>
@@ -154,80 +265,14 @@ To call the `generateAnswer` function and add the question and answer to the sta
 // ...
 
 export default function App() {
-    const [question, setQuestion] = useState("");
-    const [result, setResult] = useState({ question: "", answer: "" });
-
-    async function handleSubmitQuestion(input: string) {
-        // 1. Store the question in state
-        // 2. Call `generateAnswer` and store the answer in state
-    }
-
-    return (
-        // Everything else...
-    );
-}
-```
-
-</details>
-
-Then, turn the `textarea` element into a controlled component that updates the `question` state variable whenever you type something. Also, the handler function we created above must be called when you submit the form.
-
-Submit the form and have a look at the _"Network tab"_ in the browser, make sure you see a request to OpenAI that includes your question and resolves to an answer.
-
-### Excercise 3
-
-When you submit the form, you want to see the question and the answer displayed in the screen. Create a new component called `Message` in `src/components/Message/Message.tsx`, we'll use this component to render the question and the answer:
-
-<details open>
-    <summary>src/components/Message/Message.tsx</summary>
-
-```ts
-type MessageProps = {
-    sender: string
-    title: string,
-    message: string,
-    timestamp?: string
-}
-
-export default function Message({ sender, title, message, timestamp = "" }: MessageProps) {
-    return (
-        <div className="flex items-start gap-2.5 mx-8 mb-4">
-            <div className="w-8 h-8 rounded-full bg-red-300">
-                <span className="w-8 h-8 flex justify-center items-center">{sender}</span>
-            </div>
-            <div className="flex flex-col w-full leading-1.5 p-4 border-gray-200 bg-gray-100 rounded-e-xl rounded-es-xl dark:bg-gray-700">
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{title}</span>
-                    {timestamp && <span className="text-sm font-normal text-gray-500 dark:text-gray-400">{timestamp}</span>}
-                </div>
-                <p className="text-sm font-normal py-2.5 text-gray-900 dark:text-white">{message}</p>
-            </div>
-        </div>
-    );
-}
-```
-
-</details>
-
-Render this component from `src/App.tsx` so it shows the question and the answer. You can use a name like "Me" for the question, and "GPT (or "AI") for the answer:
-
-<details open>
-    <summary>src/App.tsx</summary>
-
-```ts
-import { useState } from "react";
-import { generateAnswer } from "./utils/langchain";
-// 1. import `Message` component
-
-export default function App() {
     // ...
 
     return (
         // ...
 
-        <div className="h-full ">
+        <div className="h-4/5 overflow-auto">
               <div className="h-full flex flex-col items-center text-sm dark:bg-gray-800">
-                  // 2. Render the Message component for the question and answer
+                  // 2. Using the `messages` state variable, render the Message component for the question and answer
               </div>
           </div>
 
@@ -242,12 +287,12 @@ When you complete this excercise you should be able to type a question, submit t
 
 ### Excercise 4
 
-The response from OpenAI might take some time to be delivered. That's why adding a loading indicator is a nice touch. You can use the following code block to create a new file called `src/components/Loader/Loader.tsx`:
+The response from the LLM might take some time to be delivered. That's why adding a loading indicator is a nice touch. You can use the following code block to create a new file called `src/components/Loader.jsx`:
 
 <details open>
-    <summary>src/components/Loader/Loader.tsx</summary>
+    <summary>src/components/Loader.jsx</summary>
 
-```ts
+```js
 export default function Loader() {
     return (
         <div role="status">
@@ -263,15 +308,15 @@ export default function Loader() {
 
 </details>
 
-You can use this component in `src/App.tsx` to show a loading indicator when you're waiting for the request to OpenAI to resolve.
+You can use this component in `src/App.jsx` to show a loading indicator when you're waiting for the request to the LLM to resolve.
 
 BONUS: Also add an error state.
 
-The application will now have both a way to ask questions and shows a loading state when the answer is being fetched from OpenAI.
+The application will now have both a way to ask questions and shows a loading state when the answer is being fetched from the LLM.
 
 ### Excercise 5
 
-The way you ask your question makes a huge difference in the response you're getting, maybe you've wondered why our answer is short and snappy rather than a blurb of text. [Prompt engineering](https://platform.openai.com/docs/guides/prompt-engineering) is a common way to change the format or style of the answer.
+The way you ask your question makes a huge difference in the response you're getting, maybe you've wondered why our answer is short and snappy rather than a blurb of text. [Prompt engineering](https://www.promptingguide.ai/) is a common way to change the format or style of the answer.
 
 By giving the LLM a prompt template together with your question, you can control the format or sentiment of the answer. You don't always want to expose the prompt to the user of the application too.
 
@@ -281,163 +326,197 @@ Imagine we're building a GPT for a travel office, let's add the following prompt
 Take the role of a personal travel assistant, and answer the following question in detail: {question}
 ```
 
-We're going to test this prompt template in the [OpenAI Playground](https://platform.openai.com/playground) first.
+Have a look at the [LangChainJS docs](https://js.langchain.com/docs/concepts/#string-prompttemplates) to see how to implement a standard prompt template for the `generateAnswer` function in `src/utils/langchain.js`.
 
-Have a look at the [LangChainJS docs](https://js.langchain.com/docs/modules/model_io/prompts/quick_start) to see how to implement a prompt template for the `generateAnswer` function in `src/utils/langchain.ts`.
+First, we'll implement a prompt template with a variable substitution. For this you should import the following method:
 
-Try out the impact of the prompt template on the answer from the LLM. Make sure to update the test case in `src/utils/langchain.test.ts` too.
+```js
+import { PromptTemplate } from "@langchain/core/prompts";
+```
 
-Hint: How can you overwrite the prompt instruction in the test case too without mocking?
-
-### Excercise 6
-
-The way you prompt the LLM isn't the only way to change the answer of the LLM, another thing we can do is changing the `temperature` or by using a different model.
-
-You can modify these values in `src/utils/langchain.ts`:
+Then add your prompt template:
 
 <details open>
-    <summary>src/utils/langchain.ts</summary>
+    <summary>src/utils/langchain.js</summary>
   
-```ts
-const llm = new OpenAI({
-    openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
-    temperature: 0.9, // Can be between 0 and 1
-    modelName: "gpt-4-0125-preview", // Default. Other options: https://platform.openai.com/docs/models/
-    maxTokens: 300 // length of response, tokens !== characters
-});
+```js
+export async function generateAnswer(question) {
+    // const model = ...
+
+    const promptTemplate = PromptTemplate.fromTemplate(
+        "Take the role of a personal travel assistant, and answer the following question in detail: {question}"
+    );
+
+    const formattedPrompt = await promptTemplate.invoke({ question });
+
+    let answer = ''
+    try {
+        answer = await model.invoke(formattedPrompt);
+    } catch (e) {
+        return 'Something went wrong'
+    }
+}
 ```
 </details>
 
-Play around with different values, both in your code and the OpenAI playground. How does this impact the quality or style of the answer?
+Try out the impact of the prompt template on the answer from the LLM. Make sure to update the test case in `src/utils/langchain.test.js` too.
 
-### Excercise 7
+Hint: How can you overwrite the prompt instruction in the test case too without mocking?
 
-The above is an example of a "zero shot" prompt. We didn't provide the LLM with any context besides what role to take. Therefore we assumed the LLM knows what a travel agent is, but sometimes the model has no information on your question or needs additional context.
+Hint: The way you prompt the LLM isn't the only way to change the answer of the LLM, another thing we can do is changing the model parameters or by using a different model.
 
-Before implementing a new type of prompting, we'll need to implement a chat model:
+You can modify these values in `src/utils/langchain.js`:
 
-<details>
-    <summary>src/utils/langchain.ts</summary>
-
-    ```ts
-    import { ChatOpenAI } from "@langchain/openai";
-    import { ChatPromptTemplate } from "@langchain/core/prompts";
-
-    const llm = new ChatOpenAI({
-        openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
-        temperature: 1,
-        modelName: "gpt-4-0125-preview",
+<details open>
+    <summary>src/utils/langchain.js</summary>
+  
+```js
+export async function generateAnswer(question) {
+    const model = new OpenAI({
+        openAIApiKey: import.meta.env.VITE_OPENAI_APIKEY,
+        model: "gpt-3.5-turbo-instruct", // For other models https://platform.openai.com/docs/models
+        temperature: 0.7,
+        maxTokens: 1000,
+        maxRetries: 5,
+        // see https://v03.api.js.langchain.com/classes/_langchain_openai.OpenAI.html for all model parameters
     });
 
-    export async function generateAnswer(
-        question: string,
-        promptTemplate: string = "Take the role of a {role}, that answers questions in a {style} way.",
-        role: string = "Personal travel assistant",
-        style: string = "consistent" // What happens if you change this to detailed?
-    ) {
-        let answer = ''
-
-        const chatPrompt = ChatPromptTemplate.fromMessages([
-            ["system", promptTemplate],
-            ["human", "{question}"],
-        ]);
-
-        const formattedPrompt = await chatPrompt.formatMessages({
-            role,
-            style,
-            question
-        });
-
-        try {
-            const result = await llm.invoke(formattedPrompt);
-            answer = result?.content as string;
-        } catch (e) {
-            return 'Something went wrong';
-        }
-
-        return answer;
-    }
-
-    ```
-
+    // Or for watsonx
+    const model = new WatsonxAI({
+        modelId: "ibm/granite-13b-instruct-v2", // For other models https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-api-model-ids.html?context=wx&audience=wdp
+        ibmCloudApiKey: import.meta.env.VITE_WATSONX_APIKEY,
+        projectId: import.meta.env.VITE_WATSONX_PROJECT_ID,
+        modelParameters: {
+            max_new_tokens: 100,
+            min_new_tokens: 0,
+            stop_sequences: [],
+            repetition_penalty: 1,
+        },
+    });
+}
+```
 </details>
 
-In the above setup we made it easier to change the input variables, and by using a Chat model instead of LLM model we can start implementing different prompting techniques. You might see there's a `human` and `system` template, as in the Chat model subsequent messages are being used as context.
+Play around with different values, either from the application or by writing different test cases. How does this impact the quality or style of the answer?
 
-Fix your test so it will continue to run.
+### Excercise 6
 
-### Excercise 8
-
-We can also try "few shot prompting" where we give the LLM some examples before asking our question, try [this example in the OpenAI playground](https://platform.openai.com/playground/p/WqBsOKw0bvEae65ajSQPLRfv?model=gpt-3.5-turbo&mode=chat).
+The above is an example of a "zero shot" prompt. We can also try "few shot prompting" where we give the LLM some examples before asking our question.
 
 Let's start by adding a few shot prompting technique:
 
 <details>
-    <summary>src/utils/langchain.ts</summary>
+    <summary>src/utils/langchain.js</summary>
 
-```ts
+```js
 import { ChatOpenAI } from "@langchain/openai";
+// 1. Import method
 import { ChatPromptTemplate, FewShotChatMessagePromptTemplate } from "@langchain/core/prompts";
 
-const llm = new ChatOpenAI({
-    openAIApiKey: import.meta.env.VITE_OPENAI_KEY,
-    temperature: 1,
-    modelName: "gpt-4-0125-preview",
-});
+export async function generateAnswer(question) {
+    // const model = ...
 
-export async function generateAnswer(
-    question: string,
-    promptTemplate: string = "Take the role of a Personal travel assistant, that answers questions in a consistent way."
-) {
-    let answer = '';
+    // 2. Set prompt for the examples
+        const examplePrompt = PromptTemplate.fromTemplate(
+        "Question: {question}\n\nAnswer: {answer}"
+    );
 
+    // 3. Provide examples that will be mapped to the examplePrompt above
     const examples = [
         {
-            input: "What are the best restaurants in Amsterdam?",
-            output: "The highest rated restaurants in Amsterdam are (1), (2), (3)",
+            question: "What are the best museums in Amsterdam?",
+            answer: "The highest rated museums in Amsterdam are: Rijksmuseum, Van Gogh Museum, Anne Frank Huis",
         },
         {
-            input: "What is the best time of the year to visit The Netherlands?",
-            output: "Summer",
+            question: "What is the best time of the year to visit The Netherlands?",
+            answer: "The best time of the year to visit The Netherlands is: summer",
+        },
+        {
+            question: "How would you recommend to travel in The Netherlands?",
+            answer: "The recommended means of transportation in The Netherlands are: bike, boat, train",
         },
     ];
 
-    const examplePrompt = ChatPromptTemplate.fromTemplate(`User: {input}
-Assistant: {output}`);
-
-    const fewShotPrompt = new FewShotChatMessagePromptTemplate({
-        prefix: promptTemplate,
-        suffix: "User: {input} Assistant:",
-        examplePrompt,
+    // 4. Create few shot prompt template from examples
+    const prompt = new FewShotPromptTemplate({
         examples,
-        inputVariables: ["input"],
+        examplePrompt,
+        suffix: "Question: {question}\n\n",
+        inputVariables: ["question"],
     });
 
-    const formattedPrompt = await fewShotPrompt.format({
-        input: question,
+    // 5. Substitute `question` in the suffx
+    const formattedPrompt = await prompt.format({
+        question
     });
 
-    try {
-        const result = await llm.invoke(formattedPrompt);
-        answer = result?.content as string;
-    } catch (e) {
-        console.log(e);
-        return 'Something went wrong';
-    }
-
-    return answer;
-}
+    // ...
 ```
 
 </details>
 
-Ask a question like "What are the best museums in amsterdam?" and the response should match the format of the examples. Try for yourself, see the difference when you change the provided examples.
+Ask a question like "What are the best restaurants in amsterdam?" and the response should match the format of the examples. Try for yourself, see the difference when you change the provided examples.
 
-BONUS: Edit the application to allow follow-up questions by [passing the chat history](https://js.langchain.com/docs/modules/memory/how_to/summary#usage-with-an-llm).
+### Excercise 7
 
-BONUS: You can also implement few shot prompting without using chat, for this you can use [prompt pipelines](https://js.langchain.com/docs/modules/model_io/prompts/pipeline).
+Optional: only works with OpenAI at the moment
 
-### Excercise 9
+Structured outputs can be used to force the LLM to return for example JSON. To enable this you need to use a supported chat model, such as `gpt-4`. To get started, we first need to install `zod`:
+
+```bash
+npm i zod
+```
+
+After installing you can add the following code to `src/utils/langchain.js`:
+
+<details>
+    <summary>src/utils/langchain.js</summary>
+
+```js
+// 1. Import chat model & zod
+import { ChatOpenAI } from "@langchain/openai";
+import z from 'zod'
+
+export async function generateAnswer(question) {
+    // 2. Initiate method for chat
+    const model = new ChatOpenAI({
+        openAIApiKey: process.env.VITE_OPENAI_APIKEY,
+        model: "gpt-4",
+    });
+
+    // 3. Define output structure
+    const recommendations = z.object({
+        title: z.string().describe("Name of the recommendation"),
+        description: z.string().describe("Description in maximum 2 sentences"),
+        age: z.number().optional().describe("Minimal age for the recommendation"),
+    });
+
+    // 4. Create prompt and format it with variable
+    const prompt = PromptTemplate.fromTemplate(
+        "Be a helpful assistant and give a recommendation for the following activity: {question}"
+    );
+    const formattedPrompt = await prompt.format({
+        question
+    });
+
+    let answer = ''
+    try {
+        // 5. Enable structured ouput
+        const structuredLlm = model.withStructuredOutput(recommendations);
+        const structuredAnswer = await structuredLlm.invoke(formattedPrompt);
+
+        answer = JSON.stringify(structuredAnswer)
+    } catch (e) {
+
+    // ...
+
+```
+
+</details>
+
+Update the structure for your use case. Can you style the response message so it would become better at displaying the structured output?
+
+### Excercise 8
 
 Next to few-shot prompts or adding the chat history as context, you can also load data from external sources and pass it to the LLM.
 
@@ -445,37 +524,48 @@ In the directory `src/public` you can find a file called `data.txt` that contain
 
 We don't want to pass the entire file to the LLM, as this can lead to overload when you have a lot of data. Instead, we need to take the most important parts of our data for whihch we would need a vector database.
 
-We'll use a local in-memory vectorstore as this is a demo environment, by making these changes in `src/utils/langchain.ts`:
+We'll use a local in-memory vectorstore and local embeddings as this is a demo environment:
+
+First, install the following libraries:
+
+```
+npm install @langchain/community @langchain/core @tensorflow/tfjs
+npm install @tensorflow/tfjs-node-gpu @tensorflow-models/universal-sentence-encoder --legacy-peer-deps
+```
+
+Then continue by making these changes in `src/utils/langchain.js`:
 
 <details open>
-    <summary>src/utils/langchain.ts</summary>
+    <summary>src/utils/langchain.js</summary>
 
-```ts
+```js
 // ...
-import { ChatOpenAI, OpenAIEmbeddings } from "@langchain/openai";
-import { ChatPromptTemplate, FewShotChatMessagePromptTemplate } from "@langchain/core/prompts";
+import "@tensorflow/tfjs-node-gpu";
+import { TensorFlowEmbeddings } from "@langchain/community/embeddings/tensorflow";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
-
-// ...
-
-let vectorStore: MemoryVectorStore;
+import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+import fs from 'fs'
 
 export async function generateAndStoreEmbeddings() {
-    const trainingText = await fetch("/data.txt")
-        .then((response) => response.text())
-        .then((text) => text);
+    let vectorStore = ''
+
+    const file = fs.readFileSync(process.cwd() + '/src/public/data.txt', 'binary');
 
     const textSplitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 1000,
+        chunkSize: 200,
+        chunkOverlap: 100,
     });
 
-    const docs = await textSplitter.createDocuments([trainingText]);
+    const docs = await textSplitter.createDocuments([file]);
 
     vectorStore = await MemoryVectorStore.fromDocuments(
         docs,
-        new OpenAIEmbeddings({ openAIApiKey: import.meta.env.VITE_OPENAI_KEY }),
+        new TensorFlowEmbeddings()
     );
+
+    return vectorStore
 }
 
 // Everything else ...
@@ -483,86 +573,63 @@ export async function generateAndStoreEmbeddings() {
 
 </details>
 
-In `src/App.tsx` we need to load this data on the first render:
+The next step is to use the new function in the `generateAnswer` function to use the data stored in the vectorstore:
 
 <details open>
-    <summary>src/App.tsx</summary>
+    <summary>src/utils/langchain.js</summary>
 
-```ts
-// src/App.tsx
-import { useEffect, useState } from "react";
-import { generateAnswer, generateAndStoreEmbeddings } from "./utils/langchain";
-import Message from "./components/Message/Message";
-import Loader from "./components/Loader/Loader";
-
-export default function App() {
-    const [question, setQuestion] = useState("");
-    const [result, setResult] = useState({ question: "", answer: "" });
-    const [loading, setLoading] = useState(false);
-
-    // 1. Load data into vector store
-
-    // Everything else ...
-
-}
-```
-
-</details>
-
-The next step is to create a new function for the `generateAnswer` function to use the data stored in the vectorstore:
-
-<details open>
-    <summary>src/utils/langchain.ts</summary>
-
-```ts
-// ...
-import { createRetrievalChain } from "langchain/chains/retrieval";
-import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
-
+```js
 // ...
 
-export async function generateAnswerRAG(question: string) {
-    let answer = '';
+export async function generateAnswer(question) {
+    const model = new WatsonxAI({
+        modelId: "ibm/granite-13b-instruct-v2",
+        ibmCloudApiKey: process.env.VITE_WATSONX_APIKEY,
+        projectId: process.env.VITE_WATSONX_PROJECT_ID,
+    });
 
-    const prompt = ChatPromptTemplate.fromTemplate(`
-Answer the following question based only on the provided context:
+    // const model = new OpenAI({
+    //     openAIApiKey: process.env.VITE_OPENAI_APIKEY,
+    //     model: "gpt-3.5-turbo-instruct",
+    // });
 
-<context>
+    const vectorStore = await generateAndStoreEmbeddings()
+
+    const prompt = PromptTemplate.fromTemplate(` Use the following pieces of context to answer the question at the end.
+If you can't find the answer in the provided context, just say that you cannot answer the question based on the provided context, 
+don't answer based on your training data or hallucinate.
+
 {context}
-</context>
 
-Question: {input}`
-    );
+Question: {question}
 
-    const documentChain = await createStuffDocumentsChain({
-        llm,
-        prompt,
-    });
+Helpful Answer:`);
 
-    const retriever = vectorStore.asRetriever();
-
-    const retrievalChain = await createRetrievalChain({
-        combineDocsChain: documentChain,
-        retriever,
-    });
-
+    let answer = ''
     try {
-        const result = await retrievalChain.invoke({
-            input: question,
+        const customRagChain = await createStuffDocumentsChain({
+            llm: model,
+            prompt,
+            outputParser: new StringOutputParser(),
         });
-        answer = result?.answer;
-    } catch (e) {
-        console.log(e);
-        return 'Something went wrong';
-    }
 
-    return answer;
+        const retriever = vectorStore.asRetriever();
+        const context = await retriever.invoke(question);
+
+        answer = await customRagChain.invoke({
+            question,
+            context,
+        });
+
+    } catch (e) {
+        console.log({ e })
+        return 'Something went wrong'
+    }
+    return answer
 }
 ```
 
 </details>
-
-And finally, use this new function in `src/App.tsx`.
 
 If you ask a question now, it will inject the data from the document. Try this out with multiple (follow-up) questions.
 
