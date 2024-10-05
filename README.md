@@ -50,10 +50,10 @@ You're now ready to start with the excercises.
 To interface with the LLMs, we need to install a library called LangChain:
 
 ```bash
-npm install langchain @langchain/openai
+npm install langchain @langchain/core @langchain/openai
 
 # Or for watsonx
-npm install langchain @langchain/community
+npm install langchain @langchain/core @langchain/community
 ```
 
 After the installation is complete, you should add a new file called `.env` in the root of your Vite application and add the following environment variable:
@@ -168,7 +168,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // Add this part
-app.post("/message", async (req, res, next) => {
+app.post("/api/message", async (req, res, next) => {
   try {
     const { question } = req?.body
     const answer = await generateAnswer(question)
@@ -182,9 +182,9 @@ app.post("/message", async (req, res, next) => {
 
 </details>
 
-Start the application by running `npm run dev` in the terminal. The application will start, and is availabe at `http://localhost:3000` and `http://localhost:3000/message` for the API.
+Start the application by running `npm run dev` in the terminal. The application will start, and is availabe at `http://localhost:3000` and `http://localhost:3000/api/message` for the API.
 
-Can you send a request `http://localhost:3000/message` using cURL, Postman or any other tool you use for testing API requests? 
+Can you send a request `http://localhost:3000/api/message` using cURL, Postman or any other tool you use for testing API requests? 
 
 Hint: The API has the method `POST` and expects JSON with a body containing the field `question`.
 
@@ -192,7 +192,7 @@ Hint: The API has the method `POST` and expects JSON with a body containing the 
     <summary>cURL solution</summary>
 
 ```bash
-curl -XPOST -H "Content-type: application/json" -d '{ "question": "What is the capital of the UK" }' 'http://localhost:3000/message'
+curl -XPOST -H "Content-type: application/json" -d '{ "question": "What is the capital of the UK" }' 'http://localhost:3000/api/message'
 ```
 
 </details>
@@ -201,10 +201,10 @@ curl -XPOST -H "Content-type: application/json" -d '{ "question": "What is the c
 
 We want to be able to use the messagebox in the application to send the question to the LLM and show the answer in the screen.
 
-First, create a new component called `src/components/Message.jsx` that we'll use to display the messages:
+First, create a new component called `src/components/api/Message.jsx` that we'll use to display the messages:
 
 <details open>
-    <summary>src/components/Message.jsx</summary>
+    <summary>src/components/api/Message.jsx</summary>
 
 ```js
 export default function Message({ role, content }) {
@@ -229,7 +229,7 @@ From our `App` component in `src/App.js`, we can import this component and make 
 
 ```js
 import { useState } from "react";
-import Message from "./components/Message";
+import Message from "./components/api/Message";
 
 export default function App() {
   const [question, setQuestion] = useState('');
@@ -237,7 +237,7 @@ export default function App() {
 
   async function handleSubmitQuestion(input) {
     try {
-        // 1. Call `/message` 
+        // 1. Call `/api/message` 
         // 2. Store the answer in state in below format
         // setMessages([
         //   { role: "user", content: "question" },
@@ -254,9 +254,9 @@ export default function App() {
 
 </details>
 
-Submit the form and have a look at the _"Network tab"_ in the browser, make sure you see a request to the endpoint `/message` that includes your question and resolves to an answer.
+Submit the form and have a look at the _"Network tab"_ in the browser, make sure you see a request to the endpoint `/api/message` that includes your question and resolves to an answer.
 
-Once you confirmed it renders, we want to display the question and the answer on the screen. You already created a new component called `Message` in `src/components/Message.jsx`, we'll use this component to render the question and the answer:
+Once you confirmed it renders, we want to display the question and the answer on the screen. You already created a new component called `Message` in `src/components/api/Message.jsx`, we'll use this component to render the question and the answer:
 
 <details open>
     <summary>src/App.tsx</summary>
