@@ -670,9 +670,19 @@ Then create a specific function and use it to retrieve data from Wikipedia. We n
 
 BONUS: Try one of the other [community tools](https://js.langchain.com/docs/integrations/tools/)
 
+## Excercise 10 (BONUS)
+
+After calling a specific tool, the next step of complexitity would be to use the LLM to determine which tool to call from a list of tools. This excercise involves heavy prompt engineering, and every model has slightly different requirements for the prompt used (search for function calling / tool calling prompts). This is a first step towards designing a ReAct Agent or Agent Framework.
+
+The steps would be:
+1) Define the list of tools
+2) Send a prompt to the LLM containing the question and list of tools
+3) Let the LLM decide on which tool to use
+4) Call the suggested tool
+5) Put the tool response into a prompt, so the LLm can generate the final answer.
+
+See the branch [solutions](https://github.com/royderks/ai-web-workshop/tree/solutions) for an example with Llama 3.2; a model that is very good at function calling and working with code in general.
 
 ## Where to go from here
 
-- Document Loaders
-- RAG (Retrieval Augmented Generation)
-- Agents
+- Agentic frameworks (watsonx Flows Engine, CrewAI, LangGraph)
