@@ -224,10 +224,10 @@ Change the env variable defitions, from: `import.meta.env.VITE_WATSONX_APIKEY` t
 
 We want to be able to use the messagebox in the application to send the question to the LLM and show the answer in the screen.
 
-First, create a new component called `src/components/api/Message.jsx` that we'll use to display the messages:
+First, create a new component called `src/components/Message.jsx` that we'll use to display the messages:
 
 <details open>
-    <summary>src/components/api/Message.jsx</summary>
+    <summary>src/components/Message.jsx</summary>
 
 ```js
 export default function Message({ role, content }) {
