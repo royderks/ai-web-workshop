@@ -165,6 +165,7 @@ To avoid leaking the credentials to the user, we need to set up a server-side re
 ```js
 // Import the file
 import { generateAnswer } from './src/utils/langchain.js'
+import 'dotenv/config' // import config
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
