@@ -370,7 +370,7 @@ export async function generateAnswer(question) {
         "Take the role of a personal travel assistant, and answer the following question in detail: {question}"
     );
 
-    const formattedPrompt = await promptTemplate.invoke({ question });
+    const formattedPrompt = await promptTemplate.format({ question });
 
     let answer = ''
     try {
