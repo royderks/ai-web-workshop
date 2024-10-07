@@ -163,9 +163,13 @@ To avoid leaking the credentials to the user, we need to set up a server-side re
     <summary>server.js</summary>
 
 ```js
+// Import the file
+import { generateAnswer } from './src/utils/langchain.js'
+
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+
 
 // Add this part
 app.post("/api/message", async (req, res, next) => {
@@ -196,6 +200,24 @@ curl -XPOST -H "Content-type: application/json" -d '{ "question": "What is the c
 ```
 
 </details>
+
+Hint: if you get any errors with the `.env` variables, install the library `dot-env`:
+
+```
+npm install dotenv
+```
+
+Import it into the `src/utils/langchain.js` file:
+
+```js
+// ...
+
+import 'dotenv/config'
+
+export async function generateAndStoreEmbeddings() {
+```
+
+Change the env variable defitions, from: `import.meta.env.VITE_WATSONX_APIKEY` to `process.env.VITE_WATSONX_APIKEY`.
 
 ### Excercise 3
 
