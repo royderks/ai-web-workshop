@@ -15,15 +15,8 @@ export default function Home() {
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<BaseMessage[]>([
     new SystemMessage(`
-      You are an expert SQL assistant. Your task is to generate SQL queries based on user requests. Follow these strict formatting guidelines:
-        
-      You should create a SQLite query based on natural language. 
-      Use the "getFromDB" tool to get data from a database.
-
-      - Always enclose field names and table names in double quotes ("), even if they contain no special characters.
-      - Ensure proper SQL syntax and use best practices for readability.
-      - Maintain consistency in capitalization (e.g., SQL keywords in uppercase).
-    `),
+      You are a friendly assistant. Please answer my questions thorougly and don't make up fake data.
+    `)  
   ]);
   const [isLoading, setIsLoading] = useState(false);
 
