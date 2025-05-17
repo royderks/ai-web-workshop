@@ -68,7 +68,7 @@ Next, we'll create the connection to the model in `src/app/actions.ts`:
 
         // Import Chat interface
         import { ChatOllama } from "@langchain/ollama";
-        // import { OpenAI } from "@langchain/openai";
+        // import { ChatOpenAI } from "@langchain/openai";
         // import { WatsonxAI } from "@langchain/community/llms/watsonx_ai";
 
         import { createReactAgent } from "@langchain/langgraph/prebuilt";
@@ -94,7 +94,7 @@ We'll create our first function that can be used to generate an answer for a que
             const deserialized = mapStoredMessagesToChatMessages(messages);
 
             const llm =  new ChatOllama({ model: "llama3.2", temperature: 0 })
-            // const llm = new OpenAI({
+            // const llm = new ChatOpenAI({
             //     openAIApiKey: process.env.OPENAI_APIKEY,
             //     model: "gpt-3.5-turbo-instruct",
             //     temperature: 0 // lower temperature = less deterministic
@@ -427,13 +427,13 @@ Hint: You can also use other MCP client applications, see [here](https://modelco
 npm install @langchain/mcp-adapters @modelcontextprotocol/sdk zod-to-json-schema
 ```
 
-We're going to clear the contents of `src/app/actions.ts`, and add the imports for `@langchain/mcp-adapters` and `zod-to-json-schema`:
+We're going to clear the contents of `src/app/actions.ts`, and add the import for `@langchain/mcp-adapters`:
 
 ```js
 "use server";
 
 import { ChatOllama } from "@langchain/ollama";
-// import { OpenAI } from "@langchain/openai";
+// import { ChatOpenAI } from "@langchain/openai";
 // import { WatsonxAI } from "@langchain/community/llms/watsonx_ai";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import {
@@ -443,10 +443,9 @@ import {
 import { z } from "zod";
 
 import { MultiServerMCPClient } from "@langchain/mcp-adapters";
-import { zodToJsonSchema } from "zod-to-json-schema";
 
 const llm = new ChatOllama({ model: "llama3.2", temperature: 0 });
-// const llm = new OpenAI({
+// const llm = new ChatOpenAI({
 //     openAIApiKey: process.env.OPENAI_APIKEY,
 //     model: "gpt-3.5-turbo-instruct",
 //     temperature: 0 // lower temperature = less deterministic
@@ -476,10 +475,51 @@ export async function message(messages: StoredMessage[]) {
 }
 ```
 
+Then we'll need to connect the MCP server right above the `createReactAgent` logic:
+
+```js
+export async function message(messages: StoredMessage[]) {
+  const deserialized = mapStoredMessagesToChatMessages(messages);
+
+  // Create client and connect to server
+  const client = new MultiServerMCPClient({
+    throwOnLoadError: true,
+    prefixToolNameWithServerName: true,
+    additionalToolNamePrefix: "mcp",
+
+    // Server configuration
+    mcpServers: {
+      wikipedia: {
+        transport: "stdio",
+        command: "node",
+        // Replace with relative path to your mcp/build/index.js file
+        args: [`../mcp/build/index.js`],
+      },
+    },
+  });
+
+  const mcpTools = await client.getTools();
+
+  // ...
+}
+```
+
+You can now restart the application (`npm run dev`) and ask questions related to the contents of Wikipedia.
+
+### Excercise 8 - Add more MCP servers
+
+You can connect any MCP server to the MCP adapter in our agent. Check out the following lists for different official MCP servers and community servers that have been built by other developers:
+
+- https://github.com/modelcontextprotocol/servers
+- https://github.com/punkpeye/awesome-mcp-servers
+
+Hint: Try out a MCP server in the MCP inspector first.
+
 ### What's next?
 
 There's much more you can do to extend your agent:
 
 - Using workflows
+- More multi-agent patterns
 - Creating persistent memory
 - Human-in-the-loop flows
